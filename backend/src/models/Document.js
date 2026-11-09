@@ -22,7 +22,6 @@ const Document = {
       );
     });
   },
-};
 
   remove: (id) => {
     return new Promise((resolve, reject) => {
@@ -30,7 +29,7 @@ const Document = {
         if (err) reject(err);
         else resolve({ changes: this.changes });
       });
-    }),
+    });
   },
 };
 

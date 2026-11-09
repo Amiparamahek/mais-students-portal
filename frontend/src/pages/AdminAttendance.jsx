@@ -29,8 +29,14 @@ export default function AdminAttendance() {
   const loadStudentsForCourse = async (courseId) => {
     try {
       const res = await api.get(`/admin/courses/${courseId}/students`);
-      setStudents(res.data || []);
-      setAttendance({});
+      const studs = res.data || [];
+      setStudents(studs);
+      // Default everyone to present
+      const initial = {};
+      studs.forEach((s) => {
+        initial[s.id] = true;
+      });
+      setAttendance(initial);
     } catch (err) {
       console.error('Failed to fetch students:', err);
     }

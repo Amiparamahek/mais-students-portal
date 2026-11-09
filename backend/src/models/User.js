@@ -60,7 +60,16 @@ const User = {
 
   getAll: () => {
     return new Promise((resolve, reject) => {
-      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, created_at FROM users`, (err, rows) => {
+      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users`, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  },
+
+  getStudents: () => {
+    return new Promise((resolve, reject) => {
+      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users WHERE role = 'student'`, (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });

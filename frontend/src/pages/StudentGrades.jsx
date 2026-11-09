@@ -6,7 +6,7 @@ export default function StudentGrades() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/grades')
+    api.get('/grades/my-grades')
       .then((res) => setGrades(res.data || []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));

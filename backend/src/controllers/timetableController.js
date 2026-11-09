@@ -12,7 +12,8 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { courseId, day, time, room, week } = req.body;
+    const courseId = req.body.courseId || req.body.course_id;
+    const { day, time, room, week } = req.body;
     if (!courseId || !day || !time) {
       return res.status(400).json({ message: 'Course, day, and time are required' });
     }

@@ -4,7 +4,7 @@ const Grade = {
   getByStudent: (studentId) => {
     return new Promise((resolve, reject) => {
       db.all(
-        `SELECT g.*, c.code, c.name, c.credits
+        `SELECT g.*, c.code as course_code, c.name as course_name, c.credits
          FROM grades g
          JOIN courses c ON g.course_id = c.id
          WHERE g.student_id = ? AND g.status = 'published'

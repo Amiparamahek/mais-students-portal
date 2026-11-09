@@ -16,7 +16,7 @@ export default function StudentDashboard() {
     try {
       const [cRes, gRes, aRes, anRes] = await Promise.all([
         api.get('/courses/my-enrollments'),
-        api.get('/grades'),
+        api.get('/grades/my-grades'),
         api.get('/attendance/my-attendance'),
         api.get('/announcements'),
       ]);

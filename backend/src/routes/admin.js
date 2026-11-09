@@ -1,32 +1,46 @@
 const express = require('express');
 const router = express.Router();
 const { auth, adminOnly } = require('../middleware/auth');
-const {
-  getAccounts,
-  getCourses,
-  getRecords,
-  createAnnouncement,
-  updateStudent,
-  deleteStudent,
-  toggleStudentActive,
-  getCourseStudents,
-  getAttendanceReport,
-} = require('../controllers/adminController');
 
-router.get('/accounts', auth, adminOnly, getAccounts);
-router.get('/courses', auth, adminOnly, getCourses);
-router.get('/records', auth, adminOnly, getRecords);
-router.post('/announcements', auth, adminOnly, createAnnouncement);
+const adminController = require('../controllers/adminController');
+const courseController = require('../controllers/courseController');
+const timetableController = require('../controllers/timetableController');
+const attendanceController = require('../controllers/attendanceController');
+
+// Dashboard stats
+router.get('/dashboard-stats', auth, adminOnly, adminController.getDashboardStats);
 
 // Student management
-router.put('/students/:id', auth, adminOnly, updateStudent);
-router.delete('/students/:id', auth, adminOnly, deleteStudent);
-router.put('/students/:id/toggle-active', auth, adminOnly, toggleStudentActive);
+router.get('/students', auth, adminOnly, adminController.getStudents);
+router.get('/students/:id', auth, adminOnly, adminController.getStudent);
+router.post('/students', auth, adminOnly, adminController.createStudent);
+router.put('/students/:id', auth, adminOnly, adminController.updateStudent);
+router.delete('/students/:id', auth, adminOnly, adminController.deleteStudent);
+router.put('/students/:id/toggle-active', auth, adminOnly, adminController.toggleStudentActive);
+router.get('/students/:id/courses', auth, adminOnly, adminController.getStudentCourses);
 
-// Course students
-router.get('/courses/:id/students', auth, adminOnly, getCourseStudents);
+// Course management
+router.get('/courses', auth, adminOnly, adminController.getCourses);
+router.post('/courses', auth, adminOnly, courseController.create);
+router.put('/courses/:id', auth, adminOnly, courseController.update);
+router.delete('/courses/:id', auth, adminOnly, courseController.remove);
+router.get('/courses/:id/students', auth, adminOnly, adminController.getCourseStudents);
 
-// Attendance report
-router.get('/attendance/report', auth, adminOnly, getAttendanceReport);
+// Attendance
+router.post('/attendance', auth, adminOnly, attendanceController.createOrUpdate);
+router.get('/attendance/report', auth, adminOnly, adminController.getAttendanceReport);
+
+// Timetable management
+router.get('/timetable', auth, adminOnly, timetableController.getAll);
+router.post('/timetable', auth, adminOnly, timetableController.create);
+router.put('/timetable/:id', auth, adminOnly, timetableController.update);
+router.delete('/timetable/:id', auth, adminOnly, timetableController.remove);
+
+// Announcements
+router.post('/announcements', auth, adminOnly, adminController.createAnnouncement);
+
+// Accounts / records
+router.get('/accounts', auth, adminOnly, adminController.getAccounts);
+router.get('/records', auth, adminOnly, adminController.getRecords);
 
 module.exports = router;

@@ -3,6 +3,7 @@ const Course = require('../models/Course');
 const Announcement = require('../models/Announcement');
 const Enrollment = require('../models/Enrollment');
 const Attendance = require('../models/Attendance');
+const { hashPassword } = require('../utils/auth');
 
 const getAccounts = async (req, res) => {
   try {
@@ -49,7 +50,62 @@ const createAnnouncement = async (req, res) => {
   }
 };
 
-// Update student
+// ---------- Student management ----------
+
+const getStudents = async (req, res) => {
+  try {
+    const students = await User.getStudents();
+    res.json(students);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const getStudent = async (req, res) => {
+  try {
+    const student = await User.findById(req.params.id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    res.json(student);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const createStudent = async (req, res) => {
+  try {
+    const { name, email, password, role, student_id, faculty, programme, academic_year } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({ message: 'Name and email are required' });
+    }
+
+    const existing = await User.findByEmail(email);
+    if (existing) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    const passwordHash = await hashPassword(password || 'demo123');
+    const result = await User.create({
+      name,
+      email,
+      passwordHash,
+      role: role || 'student',
+      studentId: student_id,
+      faculty,
+      programme,
+      academicYear: academic_year,
+    });
+
+    res.status(201).json({ id: result.id, message: 'Student created' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,7 +121,6 @@ const updateStudent = async (req, res) => {
   }
 };
 
-// Delete student
 const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -80,7 +135,6 @@ const deleteStudent = async (req, res) => {
   }
 };
 
-// Toggle student active status
 const toggleStudentActive = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,11 +150,21 @@ const toggleStudentActive = async (req, res) => {
   }
 };
 
-// Get students enrolled in a course
+const getStudentCourses = async (req, res) => {
+  try {
+    const courses = await Enrollment.getByStudent(req.params.id);
+    res.json(courses);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ---------- Course management ----------
+
 const getCourseStudents = async (req, res) => {
   try {
-    const { id } = req.params;
-    const students = await Enrollment.getByCourse(id);
+    const students = await Enrollment.getByCourse(req.params.id);
     res.json(students);
   } catch (err) {
     console.error(err);
@@ -108,11 +172,32 @@ const getCourseStudents = async (req, res) => {
   }
 };
 
-// Attendance report per course
+// ---------- Attendance ----------
+
 const getAttendanceReport = async (req, res) => {
   try {
     const report = await Attendance.getReport();
     res.json(report);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// ---------- Dashboard stats ----------
+
+const getDashboardStats = async (req, res) => {
+  try {
+    const students = await User.getStudents();
+    const courses = await Course.getAll();
+    const announcements = await Announcement.getAll ? await Announcement.getAll() : [];
+    const report = await Attendance.getReport();
+    res.json({
+      totalStudents: students.length,
+      totalCourses: courses.length,
+      totalAnnouncements: Array.isArray(announcements) ? announcements.length : 0,
+      attendanceReport: report,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -124,9 +209,14 @@ module.exports = {
   getCourses,
   getRecords,
   createAnnouncement,
+  getStudents,
+  getStudent,
+  createStudent,
   updateStudent,
   deleteStudent,
   toggleStudentActive,
+  getStudentCourses,
   getCourseStudents,
   getAttendanceReport,
+  getDashboardStats,
 };

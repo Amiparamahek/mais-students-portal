@@ -4,7 +4,7 @@ const Attendance = {
   getByStudent: (studentId) => {
     return new Promise((resolve, reject) => {
       db.all(
-        `SELECT a.*, c.code, c.name,
+        `SELECT a.*, c.code as course_code, c.name as course_name,
                 ROUND(CASE WHEN a.classes_held > 0 THEN (a.classes_attended * 100.0 / a.classes_held) ELSE 0 END, 1) as percentage
          FROM attendance a
          JOIN courses c ON a.course_id = c.id
@@ -22,7 +22,7 @@ const Attendance = {
   getReport: () => {
     return new Promise((resolve, reject) => {
       db.all(
-        `SELECT a.*, c.code, c.name,
+        `SELECT a.*, c.code as course_code, c.name as course_name,
                 ROUND(CASE WHEN a.classes_held > 0 THEN (a.classes_attended * 100.0 / a.classes_held) ELSE 0 END, 1) as percentage
          FROM attendance a
          JOIN courses c ON a.course_id = c.id

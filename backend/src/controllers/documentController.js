@@ -12,11 +12,11 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { title, fileUrl, category } = req.body;
+    const { title, fileUrl, file_url, category } = req.body;
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
-    const result = await Document.create({ title, fileUrl, category });
+    const result = await Document.create({ title, fileUrl: fileUrl || file_url, category });
     res.status(201).json({ id: result.id, message: 'Document created' });
   } catch (err) {
     console.error(err);
