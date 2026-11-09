@@ -83,6 +83,16 @@ export default function AdminStudents() {
     }
   };
 
+  const resetPassword = async (student) => {
+    if (!confirm(`Reset password for ${student.name}? A new temporary password will be shown once.`)) return;
+    try {
+      const res = await api.post(`/admin/students/${student.id}/reset-password`);
+      alert(`Temporary password for ${student.email}:\n\n${res.data.temporaryPassword}\n\nShare it with them; they can change it on their Profile page.`);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not reset password');
+    }
+  };
+
   const toggleActive = async (id, currentStatus) => {
     try {
       await api.put(`/admin/students/${id}/toggle-active`, {
@@ -187,6 +197,17 @@ export default function AdminStudents() {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Role</label>
+              <select
+                value={form.role || 'student'}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-card"
+              >
+                <option value="student">Student</option>
+                <option value="lecturer">Lecturer</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-foreground mb-1">
                 Password
               </label>
@@ -276,7 +297,12 @@ export default function AdminStudents() {
             ) : (
               filteredStudents.map((s) => (
                 <tr key={s.id} className="hover:bg-muted">
-                  <td className="px-6 py-4 text-foreground font-medium">{s.name}</td>
+                  <td className="px-6 py-4 text-foreground font-medium">
+                    {s.name}
+                    {s.role === 'lecturer' && (
+                      <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">Lecturer</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-muted-foreground">{s.email}</td>
                   <td className="px-6 py-4 text-muted-foreground text-sm">{s.student_id || '-'}</td>
                   <td className="px-6 py-4 text-muted-foreground text-sm">{s.programme || '-'}</td>
@@ -294,6 +320,12 @@ export default function AdminStudents() {
                       className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
                     >
                       <Edit2 size={16} className="inline mr-1" /> Edit
+                    </button>
+                    <button
+                      onClick={() => resetPassword(s)}
+                      className="text-sm font-medium mr-3 text-foreground hover:text-foreground/70"
+                    >
+                      Reset password
                     </button>
                     <button
                       onClick={() => toggleActive(s.id, s.is_active !== false)}

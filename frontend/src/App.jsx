@@ -22,6 +22,12 @@ import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminDocuments from './pages/AdminDocuments';
 import AdminGrades from './pages/AdminGrades';
 import AdminExams from './pages/AdminExams';
+import LecturerClasses from './pages/LecturerClasses';
+import LecturerAttendance from './pages/LecturerAttendance';
+import LecturerAnnouncements from './pages/LecturerAnnouncements';
+import LecturerDocuments from './pages/LecturerDocuments';
+import LecturerLayout from './components/LecturerLayout';
+import StudentFindCourses from './pages/StudentFindCourses';
 
 // Student pages
 import StudentDashboard from './pages/StudentDashboard';
@@ -82,6 +88,27 @@ function App() {
           }
         />
 
+        {/* Lecturer routes */}
+        <Route
+          path="/lecturer/*"
+          element={
+            user && user.role === 'lecturer' ? (
+              <LecturerLayout>
+                <Routes>
+                  <Route index element={<LecturerClasses />} />
+                  <Route path="classes" element={<LecturerClasses />} />
+                  <Route path="attendance" element={<LecturerAttendance />} />
+                  <Route path="announcements" element={<LecturerAnnouncements />} />
+                  <Route path="documents" element={<LecturerDocuments />} />
+                  <Route path="profile" element={<StudentProfile />} />
+                </Routes>
+              </LecturerLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
         {/* Student routes */}
         <Route
           path="/student/*"
@@ -100,6 +127,7 @@ function App() {
                   <Route path="profile" element={<StudentProfile />} />
                   <Route path="exams" element={<StudentExams />} />
                   <Route path="notifications" element={<StudentNotifications />} />
+                  <Route path="find-courses" element={<StudentFindCourses />} />
                 </Routes>
               </StudentLayout>
             ) : (

@@ -28,6 +28,8 @@ export default function Login() {
 
       if (user.role === 'admin') {
         navigate('/admin/dashboard');
+      } else if (user.role === 'lecturer') {
+        navigate('/lecturer/classes');
       } else {
         navigate('/student/dashboard');
       }
@@ -73,6 +75,7 @@ export default function Login() {
             <p>Demo accounts</p>
             <p className="font-medium text-foreground">Admin: admin@tuke.sk / admin123</p>
             <p className="font-medium text-foreground">Student: student@tuke.sk / demo123</p>
+            <p className="font-medium text-foreground">Lecturer: lecturer@tuke.sk / lecturer123</p>
           </div>
         </CardContent>
       </Card>

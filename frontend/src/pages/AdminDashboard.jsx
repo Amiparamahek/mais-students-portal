@@ -29,7 +29,7 @@ export default function AdminDashboard() {
           api.get('/admin/attendance/report'),
         ]);
 
-      const students = usersRes.data || [];
+      const students = (usersRes.data || []).filter((u) => u.role === 'student');
       const courses = coursesRes.data || [];
       const announcements = announcementsRes.data || [];
 

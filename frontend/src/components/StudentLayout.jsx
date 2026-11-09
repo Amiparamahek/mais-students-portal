@@ -1,10 +1,11 @@
 import React from 'react';
-import { Approved, Award, BellBadge, Book, Calendar, Clipboard, Dashboard, File, Message2, User } from '@duo-icons/react';
+import { Approved, Award, BellBadge, Book, Calendar, Clipboard, Dashboard, File, Message2, User, Chip } from '@duo-icons/react';
 import PortalLayout from './PortalLayout';
 
 const studentMenu = [
   { name: 'Dashboard', icon: Dashboard, path: '/student/dashboard' },
   { name: 'My Courses', icon: Book, path: '/student/courses' },
+  { name: 'Find Courses', icon: Chip, path: '/student/find-courses' },
   { name: 'Attendance', icon: Approved, path: '/student/attendance' },
   { name: 'Grades', icon: Award, path: '/student/grades' },
   { name: 'Timetable', icon: Calendar, path: '/student/timetable' },

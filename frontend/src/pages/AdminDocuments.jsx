@@ -6,7 +6,8 @@ export default function AdminDocuments() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', file_url: '', category: '' });
+  const [form, setForm] = useState({ title: '', file_url: '', category: '', courseId: '' });
+  const [courses, setCourses] = useState([]);
 
   useEffect(() => {
     fetchDocuments();
@@ -14,8 +15,9 @@ export default function AdminDocuments() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await api.get('/documents');
+      const [res, cRes] = await Promise.all([api.get('/documents'), api.get('/admin/courses')]);
       setDocuments(res.data || []);
+      setCourses(cRes.data || []);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
     } finally {
@@ -28,7 +30,7 @@ export default function AdminDocuments() {
     try {
       await api.post('/documents', form);
       setShowForm(false);
-      setForm({ title: '', file_url: '', category: '' });
+      setForm({ title: '', file_url: '', category: '', courseId: '' });
       fetchDocuments();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to add document');
@@ -62,7 +64,7 @@ export default function AdminDocuments() {
         </div>
         <button
           onClick={() => {
-            setForm({ title: '', file_url: '', category: '' });
+            setForm({ title: '', file_url: '', category: '', courseId: '' });
             setShowForm(true);
           }}
           className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
@@ -104,6 +106,19 @@ export default function AdminDocuments() {
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Visible to</label>
+              <select
+                value={form.courseId}
+                onChange={(e) => setForm({ ...form, courseId: e.target.value })}
+                className="w-full px-3 py-2 border border-border rounded-md bg-card"
+              >
+                <option value="">Everyone (general document)</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} students and lecturer only</option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-3">
               <button

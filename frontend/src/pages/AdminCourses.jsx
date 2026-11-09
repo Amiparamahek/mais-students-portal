@@ -1,273 +1,206 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import api from '../services/api';
-import { Plus, Edit2, Trash2, Search, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+const empty = {
+  code: '', name: '', credits: 6, semester: '', description: '',
+  lecturer_id: '', seats: '', prerequisite_course_id: '',
+};
 
 export default function AdminCourses() {
   const [courses, setCourses] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    code: '',
-    name: '',
-    credits: 3,
-    lecturer: '',
-    semester: '',
-    description: '',
-  });
+  const [people, setPeople] = useState([]);
+  const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
+  const [enrol, setEnrol] = useState({ courseId: '', studentId: '' });
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
 
+  const load = async () => {
+    const [c, p] = await Promise.all([api.get('/admin/courses'), api.get('/admin/students')]);
+    setCourses(c.data || []);
+    setPeople(p.data || []);
+  };
   useEffect(() => {
-    fetchData();
+    load().catch((e) => setError(e.response?.data?.message || 'Failed to load classes'));
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const [cRes, sRes] = await Promise.all([
-        api.get('/admin/courses'),
-        api.get('/admin/students'),
-      ]);
-      setCourses(cRes.data || []);
-      setStudents(sRes.data || []);
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    } finally {
-      setLoading(false);
-    }
+  const lecturers = people.filter((p) => p.role === 'lecturer');
+  const students = people.filter((p) => p.role === 'student');
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const startEdit = (c) => {
+    setEditingId(c.id);
+    setForm({
+      code: c.code || '',
+      name: c.name || '',
+      credits: c.credits ?? 6,
+      semester: c.semester || '',
+      description: c.description || '',
+      lecturer_id: c.lecturer_id ?? '',
+      seats: c.seats ?? '',
+      prerequisite_course_id: c.prerequisite_course_id ?? '',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const filteredCourses = courses.filter(
-    (c) =>
-      c.code?.toLowerCase().includes(search.toLowerCase()) ||
-      c.name?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    setSaving(true);
+    setError('');
+    setNotice('');
+    const body = {
+      ...form,
+      credits: Number(form.credits) || 0,
+      lecturer_id: form.lecturer_id === '' ? null : Number(form.lecturer_id),
+      seats: form.seats === '' ? null : Number(form.seats),
+      prerequisite_course_id: form.prerequisite_course_id === '' ? null : Number(form.prerequisite_course_id),
+    };
     try {
-      if (editingId) {
-        await api.put(`/admin/courses/${editingId}`, form);
-      } else {
-        await api.post('/admin/courses', form);
-      }
-      setShowForm(false);
-      setForm({ code: '', name: '', credits: 3, lecturer: '', semester: '', description: '' });
+      if (editingId) await api.put(`/admin/courses/${editingId}`, body);
+      else await api.post('/admin/courses', body);
+      setForm(empty);
       setEditingId(null);
-      fetchData();
+      setNotice(editingId ? 'Class updated.' : 'Class created.');
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save course');
+      setError(err.response?.data?.message || 'Failed to save class');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const editCourse = (course) => {
-    setEditingId(course.id);
-    setForm({ ...course });
-    setShowForm(true);
-  };
-
-  const deleteCourse = async (id) => {
-    if (!confirm('Are you sure you want to delete this course?')) return;
+  const remove = async (c) => {
+    if (!confirm(`Delete ${c.code}? Its enrolments, grades and attendance will be removed.`)) return;
     try {
-      await api.delete(`/admin/courses/${id}`);
-      fetchData();
+      await api.delete(`/admin/courses/${c.id}`);
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete course');
+      setError(err.response?.data?.message || 'Failed to delete class');
     }
   };
 
-  const enrollStudent = async (courseId, studentId) => {
+  const enrolStudent = async (e) => {
+    e.preventDefault();
+    setError('');
+    setNotice('');
     try {
-      await api.post('/courses/enroll', { courseId, studentId });
-      fetchData();
+      await api.post('/courses/enroll', { courseId: Number(enrol.courseId), studentId: Number(enrol.studentId) });
+      setNotice('Student enrolled.');
+      setEnrol({ ...enrol, studentId: '' });
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to enroll student');
+      setError(err.response?.data?.message || 'Could not enrol student');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
+  const seatText = (c) => (c.seats == null ? `${c.enrolled_count} enrolled` : `${c.enrolled_count} / ${c.seats}`);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Manage Classes</h2>
-          <p className="text-muted-foreground">Create and manage courses, enroll students.</p>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setEditingId(null);
-              setForm({ code: '', name: '', credits: 3, lecturer: '', semester: '', description: '' });
-              setShowForm(true);
-            }}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-          >
-            <Plus size={18} /> Add Class
-          </button>
-
-          <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search classes..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-64 px-3 py-2 pl-9 border border-border rounded-md focus:outline-none  text-sm"
-            />
-          </div>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Classes</h2>
+        <p className="text-muted-foreground">Create classes, assign a lecturer, set seats and prerequisites.</p>
       </div>
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <div className="bg-card border border-border rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            {editingId ? 'Edit Class' : 'Add New Class'}
-          </h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Course Code</label>
-              <input
-                type="text"
-                required
-                value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {notice && <p className="rounded-md border bg-muted px-3 py-2 text-sm">{notice}</p>}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{editingId ? 'Edit class' : 'Add class'}</CardTitle>
+          <CardDescription>Seats empty means unlimited. A prerequisite needs a published grade before a student can enrol.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="grid gap-4 md:grid-cols-4">
+            <div className="space-y-2"><Label>Code</Label><Input required value={form.code} onChange={set('code')} /></div>
+            <div className="space-y-2 md:col-span-2"><Label>Name</Label><Input required value={form.name} onChange={set('name')} /></div>
+            <div className="space-y-2"><Label>Credits</Label><Input type="number" min="0" value={form.credits} onChange={set('credits')} /></div>
+            <div className="space-y-2">
+              <Label>Lecturer</Label>
+              <select value={form.lecturer_id} onChange={set('lecturer_id')}>
+                <option value="">Unassigned</option>
+                {lecturers.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Course Name</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
+            <div className="space-y-2"><Label>Semester</Label><Input placeholder="Winter 2026/27" value={form.semester} onChange={set('semester')} /></div>
+            <div className="space-y-2"><Label>Seats</Label><Input type="number" min="0" placeholder="Unlimited" value={form.seats} onChange={set('seats')} /></div>
+            <div className="space-y-2">
+              <Label>Prerequisite</Label>
+              <select value={form.prerequisite_course_id} onChange={set('prerequisite_course_id')}>
+                <option value="">None</option>
+                {courses.filter((c) => c.id !== editingId).map((c) => <option key={c.id} value={c.id}>{c.code} {c.name}</option>)}
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Credits</label>
-              <input
-                type="number"
-                value={form.credits}
-                onChange={(e) => setForm({ ...form, credits: parseInt(e.target.value) || 3 })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Lecturer</label>
-              <input
-                type="text"
-                value={form.lecturer}
-                onChange={(e) => setForm({ ...form, lecturer: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Semester</label>
-              <input
-                type="text"
-                value={form.semester}
-                onChange={(e) => setForm({ ...form, semester: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
-            </div>
-            <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-foreground mb-1">Description</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-                rows={2}
-              />
-            </div>
-            <div className="md:col-span-3 flex gap-3 pt-2">
-              <button
-                type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-              >
-                {editingId ? 'Update Class' : 'Create Class'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingId(null);
-                }}
-                className="flex-1 bg-secondary hover:bg-accent text-foreground px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Cancel
-              </button>
+            <div className="space-y-2 md:col-span-4"><Label>Description</Label><Input value={form.description} onChange={set('description')} /></div>
+            <div className="flex gap-3 md:col-span-4">
+              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingId ? 'Save changes' : 'Create class'}</Button>
+              {editingId && <Button type="button" variant="outline" onClick={() => { setEditingId(null); setForm(empty); }}>Cancel</Button>}
             </div>
           </form>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {/* Courses Table */}
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Code</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Name</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Credits</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Lecturer</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Semester</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Enrolled</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filteredCourses.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
-                  No classes found
-                </td>
-              </tr>
-            ) : (
-              filteredCourses.map((c) => {
-                const enrolledStudents = students.filter(
-                  (s) => s.enrolledCourses?.includes(c.id) || s.enrolled_courses?.includes(c.id)
-                );
-                return (
-                  <tr key={c.id} className="hover:bg-muted">
-                    <td className="px-6 py-4 text-foreground font-medium">{c.code}</td>
-                    <td className="px-6 py-4 text-muted-foreground">{c.name}</td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">{c.credits}</td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">{c.lecturer || '-'}</td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">{c.semester || '-'}</td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">
-                      {enrolledStudents.length}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => editCourse(c)}
-                        className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
-                      >
-                        <Edit2 size={16} className="inline mr-1" /> Edit
-                      </button>
-                      <button
-                        onClick={() => deleteCourse(c.id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        <Trash2 size={16} className="inline mr-1" /> Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
+      <Card>
+        <CardHeader>
+          <CardTitle>Enrol a student</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={enrolStudent} className="grid gap-4 md:grid-cols-3">
+            <select required value={enrol.courseId} onChange={(e) => setEnrol({ ...enrol, courseId: e.target.value })}>
+              <option value="">Choose class</option>
+              {courses.map((c) => <option key={c.id} value={c.id}>{c.code} ({seatText(c)})</option>)}
+            </select>
+            <select required value={enrol.studentId} onChange={(e) => setEnrol({ ...enrol, studentId: e.target.value })}>
+              <option value="">Choose student</option>
+              {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <Button type="submit" variant="outline">Enrol</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="py-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Code</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Lecturer</TableHead>
+              <TableHead>Seats</TableHead>
+              <TableHead>Prerequisite</TableHead>
+              <TableHead className="pr-6 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {courses.length === 0 && (
+              <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No classes yet.</TableCell></TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
+            {courses.map((c) => (
+              <TableRow key={c.id}>
+                <TableCell className="pl-6 font-medium">{c.code}</TableCell>
+                <TableCell>{c.name}</TableCell>
+                <TableCell>{c.lecturer_name || c.lecturer || <Badge variant="outline">Unassigned</Badge>}</TableCell>
+                <TableCell>
+                  <Badge variant={c.seats != null && c.enrolled_count >= c.seats ? 'destructive' : 'secondary'}>{seatText(c)}</Badge>
+                </TableCell>
+                <TableCell>{c.prerequisite_code || '-'}</TableCell>
+                <TableCell className="pr-6 text-right">
+                  <Button variant="ghost" size="icon-sm" aria-label="Edit class" onClick={() => startEdit(c)}><Pencil /></Button>
+                  <Button variant="ghost" size="icon-sm" aria-label="Delete class" onClick={() => remove(c)}><Trash2 /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
