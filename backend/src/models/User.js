@@ -79,7 +79,7 @@ const User = {
 
   getStudents: () => {
     return new Promise((resolve, reject) => {
-      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users WHERE role = 'student'`, (err, rows) => {
+      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users WHERE role IN ('student', 'lecturer')`, (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });

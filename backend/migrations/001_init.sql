@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  role TEXT DEFAULT 'student' CHECK (role IN ('student', 'admin')),
+  role TEXT DEFAULT 'student' CHECK (role IN ('student', 'admin', 'lecturer')),
   student_id TEXT UNIQUE,
   faculty TEXT,
   programme TEXT,

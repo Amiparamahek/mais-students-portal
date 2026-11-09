@@ -1,6 +1,20 @@
 const db = require('../config/database');
 
 const Enrollment = {
+  countActive: (courseId) =>
+    new Promise((resolve, reject) =>
+      db.get(`SELECT COUNT(*) AS n FROM enrollments WHERE course_id = ? AND status = 'enrolled'`, [courseId], (err, row) =>
+        err ? reject(err) : resolve(row.n)
+      )
+    ),
+
+  hasPublishedGrade: (studentId, courseId) =>
+    new Promise((resolve, reject) =>
+      db.get(`SELECT 1 FROM grades WHERE student_id = ? AND course_id = ? AND status = 'published' LIMIT 1`, [studentId, courseId], (err, row) =>
+        err ? reject(err) : resolve(!!row)
+      )
+    ),
+
   getByStudent: (studentId) => {
     return new Promise((resolve, reject) => {
       db.all(

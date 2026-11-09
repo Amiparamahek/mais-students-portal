@@ -10,9 +10,11 @@ const {
   enroll,
   unenroll,
   getMyEnrollments,
+  search,
 } = require('../controllers/courseController');
 
 router.get('/', auth, getAll);
+router.get('/search', auth, search);
 
 // Specific routes must come before '/:id' so they are not treated as an id.
 router.post('/enroll', auth, enroll);

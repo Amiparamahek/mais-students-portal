@@ -16,6 +16,7 @@ router.get('/students/:id', auth, adminOnly, adminController.getStudent);
 router.post('/students', auth, adminOnly, adminController.createStudent);
 router.put('/students/:id', auth, adminOnly, adminController.updateStudent);
 router.delete('/students/:id', auth, adminOnly, adminController.deleteStudent);
+router.post('/students/:id/reset-password', auth, adminOnly, adminController.resetStudentPassword);
 router.put('/students/:id/toggle-active', auth, adminOnly, adminController.toggleStudentActive);
 router.get('/students/:id/courses', auth, adminOnly, adminController.getStudentCourses);
 

@@ -77,11 +77,33 @@ const getStudent = async (req, res) => {
   }
 };
 
+// Gives a student or lecturer a new temporary password. It is shown once, to the admin.
+const resetStudentPassword = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.role === 'admin') {
+      return res.status(400).json({ message: 'Admin passwords cannot be reset here' });
+    }
+    const temporaryPassword = require('crypto').randomBytes(6).toString('base64url');
+    await User.updatePassword(user.id, await hashPassword(temporaryPassword));
+    res.json({ temporaryPassword, message: 'Password reset' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const createStudent = async (req, res) => {
   try {
     const { name, email, password, role, student_id, faculty, programme, academic_year } = req.body;
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
+    }
+    if (role && !['student', 'lecturer'].includes(role)) {
+      return res.status(400).json({ message: 'Role must be student or lecturer' });
     }
 
     const existing = await User.findByEmail(email);
@@ -219,6 +241,7 @@ const getDashboardStats = async (req, res) => {
 
 module.exports = {
   getAccounts,
+  resetStudentPassword,
   getCourses,
   getRecords,
   createAnnouncement,

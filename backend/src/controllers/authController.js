@@ -14,8 +14,9 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Self-registration always creates a student. Admins and lecturers are created by an admin.
     const passwordHash = await hashPassword(password);
-    const result = await User.create({ name, email, passwordHash, role, studentId, faculty, programme, academicYear });
+    const result = await User.create({ name, email, passwordHash, role: 'student', studentId, faculty, programme, academicYear });
 
     const user = await User.findById(result.id);
     const token = generateToken(user);

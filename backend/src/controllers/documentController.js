@@ -3,7 +3,7 @@ const { notifyStudents } = require('../utils/notify');
 
 const getAll = async (req, res) => {
   try {
-    const documents = await Document.getAll();
+    const documents = await Document.getVisible({ id: req.user.id, role: req.user.role });
     res.json(documents);
   } catch (err) {
     console.error(err);
@@ -13,11 +13,11 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { title, fileUrl, file_url, category } = req.body;
+    const { title, fileUrl, file_url, category, courseId, course_id } = req.body;
     if (!title) {
       return res.status(400).json({ message: 'Title is required' });
     }
-    const result = await Document.create({ title, fileUrl: fileUrl || file_url, category });
+    const result = await Document.create({ title, fileUrl: fileUrl || file_url, category, courseId: courseId || course_id });
     await notifyStudents('New document shared', title);
     res.status(201).json({ id: result.id, message: 'Document created' });
   } catch (err) {

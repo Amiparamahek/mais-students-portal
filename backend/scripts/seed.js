@@ -81,6 +81,24 @@ async function seed() {
       });
     }
 
+    // Demo lecturer: teaches CT101 and DB401
+    const lecturerHash = await bcrypt.hash('lecturer123', saltRounds);
+    await new Promise((resolve, reject) => {
+      db.run(
+        `INSERT OR IGNORE INTO users (name, email, password_hash, role, faculty, programme, academic_year)
+         VALUES (?, ?, ?, 'lecturer', ?, ?, ?)`,
+        ['Demo Lecturer', 'lecturer@tuke.sk', lecturerHash, 'Faculty of Electrical Engineering and Informatics', 'Computer Science', '2026/27'],
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
+    await new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE courses SET lecturer_id = (SELECT id FROM users WHERE email = 'lecturer@tuke.sk')
+         WHERE code IN ('CT101', 'DB401')`,
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
+
     // Get all student IDs for seeding related data
     const allStudents = await new Promise((resolve, reject) => {
       db.all("SELECT id, email FROM users WHERE role = 'student'", (err, rows) => {
