@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/dist/
+frontend/.vite/
+
+# Environment files
+backend/.env
+frontend/.env
+*.env
+.env.local
+
+# SQLite database
+backend/database.sqlite
+backend/database-report.html
+backend/database_export/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+npm-debug.log
+coverage/
