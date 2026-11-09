@@ -2,20 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import API from '../services/api';
 import { showToast } from '../components/Toast';
 
-// Search across courses, announcements and documents (FR-11 in the prototype README).
+// Search across courses and announcements (FR-11 in the prototype README).
 const Search = () => {
   const [query, setQuery] = useState('');
-  const [data, setData] = useState({ courses: [], announcements: [], documents: [] });
+  const [data, setData] = useState({ courses: [], announcements: [] });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [c, a, d] = await Promise.all([
+        const [c, a] = await Promise.all([
           API.get('/courses'),
           API.get('/announcements'),
-          API.get('/documents'),
         ]);
-        setData({ courses: c.data, announcements: a.data, documents: d.data });
+        setData({ courses: c.data, announcements: a.data });
       } catch (err) {
         showToast('Failed to load search data', 'error');
       }
@@ -32,8 +31,6 @@ const Search = () => {
         .map((c) => ({ type: 'Course', title: c.name, text: c.code })),
       ...data.announcements.filter((a) => match(a.title, a.content))
         .map((a) => ({ type: 'Announcement', title: a.title, text: a.content })),
-      ...data.documents.filter((d) => match(d.title, d.category))
-        .map((d) => ({ type: 'Document', title: d.title, text: d.category })),
     ];
   }, [query, data]);
 

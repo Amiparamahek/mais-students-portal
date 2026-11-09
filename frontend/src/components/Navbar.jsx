@@ -12,7 +12,6 @@ export const pages = [
   { key: 'grades', label: 'Grades', icon: '▥' },
   { key: 'attendance', label: 'Attendance', icon: '✓' },
   { key: 'announcements', label: 'Announcements', icon: '◉' },
-  { key: 'documents', label: 'Documents', icon: '▧' },
   { key: 'notifications', label: 'Notifications', icon: '♧' },
   { key: 'admin', label: 'Administration', icon: '⚙', admin: true },
   { key: 'search', label: 'Search', icon: '⌕' },

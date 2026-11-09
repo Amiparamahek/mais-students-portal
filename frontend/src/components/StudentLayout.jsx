@@ -1,5 +1,5 @@
 import React from 'react';
-import { Approved, Award, BellBadge, Book, Calendar, Clipboard, Dashboard, File, Message2, User, Chip } from '@duo-icons/react';
+import { Approved, Award, BellBadge, Book, Calendar, Clipboard, Dashboard, Message2, User, Chip } from '@duo-icons/react';
 import PortalLayout from './PortalLayout';
 
 const studentMenu = [
@@ -11,7 +11,6 @@ const studentMenu = [
   { name: 'Timetable', icon: Calendar, path: '/student/timetable' },
   { name: 'Exams', icon: Clipboard, path: '/student/exams' },
   { name: 'Announcements', icon: Message2, path: '/student/announcements' },
-  { name: 'Documents', icon: File, path: '/student/documents' },
   { name: 'Notifications', icon: BellBadge, path: '/student/notifications' },
   { name: 'Profile', icon: User, path: '/student/profile' },
 ];

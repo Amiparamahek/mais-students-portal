@@ -19,7 +19,6 @@ import AdminCourses from './pages/AdminCourses';
 import AdminAttendance from './pages/AdminAttendance';
 import AdminTimetable from './pages/AdminTimetable';
 import AdminAnnouncements from './pages/AdminAnnouncements';
-import AdminDocuments from './pages/AdminDocuments';
 import AdminGrades from './pages/AdminGrades';
 import AdminExams from './pages/AdminExams';
 import StudentFindCourses from './pages/StudentFindCourses';
@@ -31,7 +30,6 @@ import StudentAttendance from './pages/StudentAttendance';
 import StudentGrades from './pages/StudentGrades';
 import StudentTimetable from './pages/StudentTimetable';
 import StudentAnnouncements from './pages/StudentAnnouncements';
-import StudentDocuments from './pages/StudentDocuments';
 import StudentProfile from './pages/StudentProfile';
 import StudentExams from './pages/StudentExams';
 import StudentNotifications from './pages/StudentNotifications';
@@ -72,7 +70,6 @@ function App() {
                   <Route path="attendance" element={<AdminAttendance />} />
                   <Route path="timetable" element={<AdminTimetable />} />
                   <Route path="announcements" element={<AdminAnnouncements />} />
-                  <Route path="documents" element={<AdminDocuments />} />
                   <Route path="grades" element={<AdminGrades />} />
                   <Route path="exams" element={<AdminExams />} />
                 </Routes>
@@ -97,7 +94,6 @@ function App() {
                   <Route path="grades" element={<StudentGrades />} />
                   <Route path="timetable" element={<StudentTimetable />} />
                   <Route path="announcements" element={<StudentAnnouncements />} />
-                  <Route path="documents" element={<StudentDocuments />} />
                   <Route path="profile" element={<StudentProfile />} />
                   <Route path="exams" element={<StudentExams />} />
                   <Route path="notifications" element={<StudentNotifications />} />

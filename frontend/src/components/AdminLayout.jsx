@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users } from 'lucide-react';
-import { Approved, Award, Bell, Book, Calendar, Clipboard, Dashboard, File } from '@duo-icons/react';
+import { Approved, Award, Bell, Book, Calendar, Clipboard, Dashboard } from '@duo-icons/react';
 import PortalLayout from './PortalLayout';
 
 const adminMenu = [
@@ -12,7 +12,6 @@ const adminMenu = [
   { name: 'Exams', icon: Clipboard, path: '/admin/exams' },
   { name: 'Grades', icon: Award, path: '/admin/grades' },
   { name: 'Announcements', icon: Bell, path: '/admin/announcements' },
-  { name: 'Documents', icon: File, path: '/admin/documents' },
 ];
 
 export default function AdminLayout({ children }) {

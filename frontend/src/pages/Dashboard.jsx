@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { showToast } from '../components/Toast';
 import {
-  BookOpen, CheckCheck, GraduationCap, Bell, Clock, LayoutDashboard, Plus, ArrowRight
+  BookOpen, CheckCheck, GraduationCap, Bell, Clock, Plus, ArrowRight
 } from 'lucide-react';
 
 const ICONS = {
@@ -147,14 +147,6 @@ const Dashboard = () => {
               <div>
                 <strong>Register for a course</strong>
                 <small>Browse available subjects</small>
-              </div>
-              <ArrowRight size={18} />
-            </button>
-            <button onClick={() => goTo('/documents')}>
-              <LayoutDashboard size={20} />
-              <div>
-                <strong>Academic documents</strong>
-                <small>Find forms and files</small>
               </div>
               <ArrowRight size={18} />
             </button>

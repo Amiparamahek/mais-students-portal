@@ -14,13 +14,6 @@ const ensureColumns = {
     seats: 'INTEGER',
     prerequisite_course_id: 'INTEGER',
   },
-  documents: {
-    course_id: 'INTEGER',
-    stored_name: 'TEXT',
-    original_name: 'TEXT',
-    mime_type: 'TEXT',
-    size_bytes: 'INTEGER',
-  },
 };
 
 const files = fs.readdirSync(migrationDir).filter((f) => f.endsWith('.sql')).sort();

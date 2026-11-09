@@ -104,15 +104,6 @@ CREATE TABLE IF NOT EXISTS announcements (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Documents table
-CREATE TABLE IF NOT EXISTS documents (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  file_url TEXT,
-  category TEXT,
-  uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -199,35 +199,11 @@ async function seed() {
       });
     }
 
-    // Seed documents
-    const documentData = [
-      ['Certificate of study', 'Request proof of current student status.', 'PDF form'],
-      ['Course registration form', 'Form for course and study plan requests.', 'PDF form'],
-      ['Examination application', 'Application form for examination-related requests.', 'PDF form'],
-      ['Student handbook', 'Academic rules, student services and key contacts.', 'PDF document'],
-      ['Academic calendar', 'Semester dates, holidays and examination periods.', 'PDF document'],
-      ['Change of personal details', 'Request a correction to your student profile.', 'Online form'],
-    ];
-
-    for (const [title, , category] of documentData) {
-      await new Promise((resolve, reject) => {
-        db.run(
-          `INSERT INTO documents (title, file_url, category) VALUES (?, NULL, ?)`,
-          [title, category],
-          function (err) {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
-    }
-
     // Seed notifications - for the student
     const notificationData = [
       ['New grade published', 'A result is available for Cloud Technologies.', 0],
       ['Timetable updated', 'One class room has been updated for this week.', 0],
       ['Registration reminder', 'Review your course enrollment status.', 0],
-      ['Document available', 'Your academic calendar is available in Documents.', 1],
     ];
 
     for (const [title, message, isRead] of notificationData) {
