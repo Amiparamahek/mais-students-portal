@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const empty = {
-  code: '', name: '', credits: 6, semester: '', description: '',
-  lecturer_id: '', seats: '', prerequisite_course_id: '',
+  code: '', name: '', credits: 6, semester: '', description: '', lecturer: '',
+  seats: '', prerequisite_course_id: '',
 };
 
 export default function AdminCourses() {
@@ -32,7 +32,6 @@ export default function AdminCourses() {
     load().catch((e) => setError(e.response?.data?.message || 'Failed to load classes'));
   }, []);
 
-  const lecturers = people.filter((p) => p.role === 'lecturer');
   const students = people.filter((p) => p.role === 'student');
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -44,7 +43,7 @@ export default function AdminCourses() {
       credits: c.credits ?? 6,
       semester: c.semester || '',
       description: c.description || '',
-      lecturer_id: c.lecturer_id ?? '',
+      lecturer: c.lecturer || '',
       seats: c.seats ?? '',
       prerequisite_course_id: c.prerequisite_course_id ?? '',
     });
@@ -59,7 +58,6 @@ export default function AdminCourses() {
     const body = {
       ...form,
       credits: Number(form.credits) || 0,
-      lecturer_id: form.lecturer_id === '' ? null : Number(form.lecturer_id),
       seats: form.seats === '' ? null : Number(form.seats),
       prerequisite_course_id: form.prerequisite_course_id === '' ? null : Number(form.prerequisite_course_id),
     };
@@ -107,7 +105,7 @@ export default function AdminCourses() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Classes</h2>
-        <p className="text-muted-foreground">Create classes, assign a lecturer, set seats and prerequisites.</p>
+        <p className="text-muted-foreground">Create classes, set the lecturer name, seats and prerequisites.</p>
       </div>
 
       {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
@@ -123,13 +121,7 @@ export default function AdminCourses() {
             <div className="space-y-2"><Label>Code</Label><Input required value={form.code} onChange={set('code')} /></div>
             <div className="space-y-2 md:col-span-2"><Label>Name</Label><Input required value={form.name} onChange={set('name')} /></div>
             <div className="space-y-2"><Label>Credits</Label><Input type="number" min="0" value={form.credits} onChange={set('credits')} /></div>
-            <div className="space-y-2">
-              <Label>Lecturer</Label>
-              <select value={form.lecturer_id} onChange={set('lecturer_id')}>
-                <option value="">Unassigned</option>
-                {lecturers.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-              </select>
-            </div>
+            <div className="space-y-2"><Label>Lecturer name</Label><Input value={form.lecturer} onChange={set('lecturer')} /></div>
             <div className="space-y-2"><Label>Semester</Label><Input placeholder="Winter 2026/27" value={form.semester} onChange={set('semester')} /></div>
             <div className="space-y-2"><Label>Seats</Label><Input type="number" min="0" placeholder="Unlimited" value={form.seats} onChange={set('seats')} /></div>
             <div className="space-y-2">
@@ -187,7 +179,7 @@ export default function AdminCourses() {
               <TableRow key={c.id}>
                 <TableCell className="pl-6 font-medium">{c.code}</TableCell>
                 <TableCell>{c.name}</TableCell>
-                <TableCell>{c.lecturer_name || c.lecturer || <Badge variant="outline">Unassigned</Badge>}</TableCell>
+                <TableCell>{c.lecturer || <Badge variant="outline">Not set</Badge>}</TableCell>
                 <TableCell>
                   <Badge variant={c.seats != null && c.enrolled_count >= c.seats ? 'destructive' : 'secondary'}>{seatText(c)}</Badge>
                 </TableCell>

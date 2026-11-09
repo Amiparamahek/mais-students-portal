@@ -1,191 +1,145 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Download, Trash2 } from 'lucide-react';
 import api from '../services/api';
-import { Plus, FileText, Trash2, Download } from 'lucide-react';
+import { openDocument } from '../lib/download';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+const emptyForm = { title: '', category: '', courseId: '', link: '' };
 
 export default function AdminDocuments() {
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', file_url: '', category: '', courseId: '' });
+  const [docs, setDocs] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [form, setForm] = useState(emptyForm);
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
 
+  const load = async () => {
+    const [d, c] = await Promise.all([api.get('/documents'), api.get('/admin/courses')]);
+    setDocs(d.data || []);
+    setCourses(c.data || []);
+  };
   useEffect(() => {
-    fetchDocuments();
+    load().catch((e) => setError(e.response?.data?.message || 'Failed to load documents'));
   }, []);
 
-  const fetchDocuments = async () => {
-    try {
-      const [res, cRes] = await Promise.all([api.get('/documents'), api.get('/admin/courses')]);
-      setDocuments(res.data || []);
-      setCourses(cRes.data || []);
-    } catch (err) {
-      console.error('Failed to fetch documents:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    setError('');
+    setNotice('');
+    if (!file && !form.link) return setError('Choose a file or enter a link');
+    const body = new FormData();
+    body.append('title', form.title);
+    body.append('category', form.category);
+    body.append('courseId', form.courseId);
+    if (file) body.append('file', file);
+    else body.append('fileUrl', form.link);
+    setSaving(true);
     try {
-      await api.post('/documents', form);
-      setShowForm(false);
-      setForm({ title: '', file_url: '', category: '', courseId: '' });
-      fetchDocuments();
+      await api.post('/documents', body, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setForm(emptyForm);
+      setFile(null);
+      e.target.reset();
+      setNotice('Document added.');
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add document');
+      setError(err.response?.data?.message || 'Could not add document');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const deleteDocument = async (id) => {
-    if (!confirm('Delete this document?')) return;
+  const remove = async (d) => {
+    if (!confirm(`Delete "${d.title}"? The file is removed too.`)) return;
     try {
-      await api.delete(`/documents/${id}`);
-      fetchDocuments();
+      await api.delete(`/documents/${d.id}`);
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete');
+      setError(err.response?.data?.message || 'Could not delete');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
+  const download = async (d) => {
+    try {
+      await openDocument(d);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not open document');
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Documents</h2>
-          <p className="text-muted-foreground">Manage shared documents for students.</p>
-        </div>
-        <button
-          onClick={() => {
-            setForm({ title: '', file_url: '', category: '', courseId: '' });
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-        >
-          <Plus size={18} /> Add Document
-        </button>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Documents</h2>
+        <p className="text-muted-foreground">Upload files students can download. Attach a document to a class to limit it to that class.</p>
       </div>
 
-      {showForm && (
-        <div className="bg-card border border-border rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Add Document</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Title</label>
-              <input
-                type="text"
-                required
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">File URL</label>
-              <input
-                type="text"
-                placeholder="https://example.com/file.pdf"
-                value={form.file_url}
-                onChange={(e) => setForm({ ...form, file_url: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
-              <input
-                type="text"
-                placeholder="e.g. Syllabus, Notes, Assignment"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Visible to</label>
-              <select
-                value={form.courseId}
-                onChange={(e) => setForm({ ...form, courseId: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-card"
-              >
-                <option value="">Everyone (general document)</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>{c.code} students and lecturer only</option>
-                ))}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add document</CardTitle>
+          <CardDescription>PDF, Word, PowerPoint, Excel, text or image, up to 10 MB. Or paste a link instead.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+          {notice && <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm">{notice}</p>}
+          <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2"><Label>Title</Label><Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Category</Label><Input placeholder="Syllabus, Form, Notes" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
+            <div className="space-y-2">
+              <Label>Visible to</Label>
+              <select value={form.courseId} onChange={(e) => setForm({ ...form, courseId: e.target.value })}>
+                <option value="">Everyone</option>
+                {courses.map((c) => <option key={c.id} value={c.id}>Only {c.code} students</option>)}
               </select>
             </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Add Document
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 bg-secondary hover:bg-accent text-foreground px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Cancel
-              </button>
+            <div className="space-y-2">
+              <Label>File</Label>
+              <Input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg" onChange={(e) => setFile(e.target.files[0] || null)} />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Or link</Label>
+              <Input type="url" placeholder="https://..." disabled={!!file} value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />
+            </div>
+            <div className="md:col-span-2"><Button type="submit" disabled={saving}>{saving ? 'Uploading...' : 'Add document'}</Button></div>
           </form>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Title</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Category</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Date</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {documents.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                  No documents yet.
-                </td>
-              </tr>
-            ) : (
-              documents.map((d) => (
-                <tr key={d.id} className="hover:bg-muted">
-                  <td className="px-6 py-4 text-foreground font-medium">{d.title}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{d.category || '-'}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{new Date(d.uploaded_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-right">
-                    {d.file_url && (
-                      <a
-                        href={d.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
-                      >
-                        <Download size={16} className="inline mr-1" /> Download
-                      </a>
-                    )}
-                    <button
-                      onClick={() => deleteDocument(d.id)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    >
-                      <Trash2 size={16} className="inline mr-1" /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card className="py-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Title</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Visible to</TableHead>
+              <TableHead>File</TableHead>
+              <TableHead className="pr-6 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {docs.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No documents yet.</TableCell></TableRow>}
+            {docs.map((d) => (
+              <TableRow key={d.id}>
+                <TableCell className="pl-6 font-medium">{d.title}</TableCell>
+                <TableCell>{d.category || '-'}</TableCell>
+                <TableCell>{d.course_code ? `${d.course_code} only` : 'Everyone'}</TableCell>
+                <TableCell className="text-muted-foreground">{d.original_name || (d.file_url ? 'Link' : 'No file')}</TableCell>
+                <TableCell className="pr-6 text-right">
+                  {(d.stored_name || d.file_url) && (
+                    <Button variant="ghost" size="icon-sm" aria-label="Open document" onClick={() => download(d)}><Download /></Button>
+                  )}
+                  <Button variant="ghost" size="icon-sm" aria-label="Delete document" onClick={() => remove(d)}><Trash2 /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

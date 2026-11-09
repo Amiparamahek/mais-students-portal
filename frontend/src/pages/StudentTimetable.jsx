@@ -1,63 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+import { WEEKDAYS, weekdayOf, slotStart } from '../lib/date';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function StudentTimetable() {
-  const [timetable, setTimetable] = useState([]);
+  const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const today = weekdayOf();
 
   useEffect(() => {
     api.get('/timetable')
-      .then((res) => setTimetable(res.data || []))
-      .catch((err) => console.error(err))
+      .then((r) => setSlots(r.data || []))
+      .catch((e) => setError(e.response?.data?.message || 'Failed to load timetable'))
       .finally(() => setLoading(false));
   }, []);
 
-  // Group by day
-  const byDay = {};
-  DAYS.forEach((d) => (byDay[d] = []));
-  timetable.forEach((t) => {
-    if (byDay[t.day]) byDay[t.day].push(t);
-  });
+  const days = WEEKDAYS.slice(0, 6); // Monday to Saturday
+  const byDay = Object.fromEntries(days.map((d) => [d, []]));
+  slots.forEach((s) => byDay[s.day]?.push(s));
+  Object.values(byDay).forEach((list) => list.sort((a, b) => slotStart(a.time).localeCompare(slotStart(b.time))));
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex h-64 items-center justify-center"><div className="size-8 animate-spin rounded-full border-b-2 border-foreground" /></div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">My Timetable</h2>
-        <p className="text-muted-foreground">Weekly class schedule.</p>
+        <h2 className="text-2xl font-bold tracking-tight">My timetable</h2>
+        <p className="text-muted-foreground">Weekly lectures for your classes. Times are campus local time.</p>
       </div>
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
-          {DAYS.map((day) => (
-            <div key={day} className="border border-border rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-foreground mb-3 uppercase">{day}</h3>
-              <div className="space-y-2">
-                {byDay[day].length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-2">No classes</p>
-                ) : (
-                  byDay[day].map((t) => (
-                    <div key={t.id} className="p-2 bg-green-50 rounded border border-green-100 text-sm">
-                      <div className="font-medium text-foreground">{t.course_code || t.course_name || 'Class'}</div>
-                      <div className="text-xs text-muted-foreground">{t.time}</div>
-                      {t.room && <div className="text-xs text-muted-foreground">Room: {t.room}</div>}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {days.map((day) => (
+          <Card key={day} className={day === today ? 'ring-2 ring-foreground/20' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                {day}
+                {day === today && <Badge>Today</Badge>}
+              </CardTitle>
+              <CardDescription>{byDay[day].length === 0 ? 'No lectures' : `${byDay[day].length} lecture${byDay[day].length > 1 ? 's' : ''}`}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {byDay[day].map((s) => (
+                <div key={s.id} className="rounded-lg border bg-muted/40 p-3">
+                  <p className="text-sm font-medium">{s.course_code} - {s.course_name}</p>
+                  <p className="text-xs text-muted-foreground">{s.time} · Room {s.room || '-'} · {s.lecturer || 'Lecturer not set'}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
       </div>
+      {slots.length === 0 && !error && (
+        <p className="text-sm text-muted-foreground">No lectures scheduled for your classes yet.</p>
+      )}
     </div>
   );
 }

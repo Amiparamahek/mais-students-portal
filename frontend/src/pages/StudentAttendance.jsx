@@ -1,74 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../services/api';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function StudentAttendance() {
-  const [attendance, setAttendance] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState([]);
+  const [log, setLog] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/attendance/my-attendance')
-      .then((res) => setAttendance(res.data || []))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+    Promise.all([api.get('/attendance/my-attendance'), api.get('/attendance/my-log')])
+      .then(([t, l]) => {
+        setTotals(t.data || []);
+        setLog(l.data || []);
+      })
+      .catch((e) => setError(e.response?.data?.message || 'Failed to load attendance'));
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">My Attendance</h2>
-        <p className="text-muted-foreground">Track your class attendance.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Attendance</h2>
+        <p className="text-muted-foreground">How many lectures you attended, by class and by date.</p>
       </div>
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Course</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Classes Held</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Attended</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Percentage</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {attendance.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                  No attendance records.
-                </td>
-              </tr>
-            ) : (
-              attendance.map((a) => {
-                const pct = a.classes_held > 0
-                  ? Math.round((a.classes_attended / a.classes_held) * 100)
-                  : 0;
-                const isLow = pct < 75;
-                return (
-                  <tr key={a.id} className="hover:bg-muted">
-                    <td className="px-6 py-4 text-foreground font-medium">{a.course_code || a.course_name || 'Course #' + a.course_id}</td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">{a.classes_held}</td>
-                    <td className="px-6 py-4 text-muted-foreground text-sm">{a.classes_attended}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        isLow ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                      }`}>
-                        {pct}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card className="py-0">
+        <CardHeader className="pt-6"><CardTitle>By class</CardTitle></CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Class</TableHead>
+              <TableHead>Held</TableHead>
+              <TableHead>Attended</TableHead>
+              <TableHead className="pr-6">Percentage</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {totals.length === 0 && <TableRow><TableCell colSpan={4} className="py-6 text-center text-muted-foreground">No attendance recorded yet.</TableCell></TableRow>}
+            {totals.map((t) => (
+              <TableRow key={t.id}>
+                <TableCell className="pl-6 font-medium">{t.course_code} - {t.course_name}</TableCell>
+                <TableCell>{t.classes_held}</TableCell>
+                <TableCell>{t.classes_attended}</TableCell>
+                <TableCell className="pr-6"><Badge variant={t.percentage < 75 ? 'destructive' : 'secondary'}>{t.percentage ?? 0}%</Badge></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Card className="py-0">
+        <CardHeader className="pt-6">
+          <CardTitle>By date</CardTitle>
+          <CardDescription>Each lecture that was recorded for you.</CardDescription>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Date</TableHead>
+              <TableHead>Class</TableHead>
+              <TableHead className="pr-6">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {log.length === 0 && <TableRow><TableCell colSpan={3} className="py-6 text-center text-muted-foreground">No dated records yet.</TableCell></TableRow>}
+            {log.map((r) => (
+              <TableRow key={`${r.course_id}-${r.class_date}`}>
+                <TableCell className="pl-6">{r.class_date}</TableCell>
+                <TableCell>{r.course_code}</TableCell>
+                <TableCell className="pr-6"><Badge variant={r.present ? 'secondary' : 'destructive'}>{r.present ? 'Present' : 'Absent'}</Badge></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

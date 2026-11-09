@@ -1,73 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../services/api';
-import { Search, CheckCircle, XCircle } from 'lucide-react';
+import { toISODate } from '../lib/date';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+// Mark attendance for one class on one date. Saving the same date again updates it.
 export default function AdminAttendance() {
-  const [courses, setCourses] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [courseId, setCourseId] = useState('');
+  const [date, setDate] = useState(toISODate());
   const [students, setStudents] = useState([]);
-  const [attendance, setAttendance] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [present, setPresent] = useState({});
+  const [totals, setTotals] = useState([]);
+  const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchCourses();
+    api.get('/teaching/classes').then((r) => {
+      setClasses(r.data || []);
+      if (r.data?.[0]) setCourseId(String(r.data[0].id));
+    });
   }, []);
 
-  const fetchCourses = async () => {
-    try {
-      const res = await api.get('/admin/courses');
-      setCourses(res.data || []);
-    } catch (err) {
-      console.error('Failed to fetch courses:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Roster plus any attendance already saved for this class and date.
+  useEffect(() => {
+    if (!courseId) return;
+    Promise.all([
+      api.get(`/teaching/classes/${courseId}/students`),
+      api.get(`/teaching/classes/${courseId}/attendance`, { params: { date } }),
+    ]).then(([s, a]) => {
+      setStudents(s.data || []);
+      const saved = Object.fromEntries((a.data.marks || []).map((m) => [m.student_id, !!m.present]));
+      setPresent(Object.fromEntries((s.data || []).map((st) => [st.id, saved[st.id] ?? true])));
+      setTotals(a.data.totals || []);
+    });
+  }, [courseId, date]);
 
-  const loadStudentsForCourse = async (courseId) => {
-    try {
-      const res = await api.get(`/admin/courses/${courseId}/students`);
-      const studs = res.data || [];
-      setStudents(studs);
-      // Default everyone to present
-      const initial = {};
-      studs.forEach((s) => {
-        initial[s.id] = true;
-      });
-      setAttendance(initial);
-    } catch (err) {
-      console.error('Failed to fetch students:', err);
-    }
-  };
-
-  const handleCourseChange = (e) => {
-    const id = parseInt(e.target.value);
-    setSelectedCourse(id);
-    loadStudentsForCourse(id);
-  };
-
-  const toggleAttendance = (studentId) => {
-    setAttendance((prev) => ({
-      ...prev,
-      [studentId]: !prev[studentId],
-    }));
-  };
-
-  const saveAttendance = async () => {
-    if (!selectedCourse) return;
+  const save = async () => {
     setSaving(true);
+    setMessage(null);
     try {
-      const records = Object.entries(attendance).map(([studentId, present]) => ({
-        student_id: parseInt(studentId),
-        course_id: selectedCourse,
-        present,
-      }));
-      await api.post('/admin/attendance', { date, records });
-      alert('Attendance saved successfully!');
+      const records = students.map((s) => ({ student_id: s.id, course_id: Number(courseId), present: !!present[s.id] }));
+      await api.post('/attendance', { date, records });
+      setMessage({ ok: true, text: `Attendance saved for ${date}.` });
+      const a = await api.get(`/teaching/classes/${courseId}/attendance`, { params: { date } });
+      setTotals(a.data.totals || []);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save attendance');
+      setMessage({ ok: false, text: err.response?.data?.message || 'Could not save attendance' });
     } finally {
       setSaving(false);
     }
@@ -76,102 +58,86 @@ export default function AdminAttendance() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Mark Attendance</h2>
-        <p className="text-muted-foreground">Select a class and mark present/absent for each student.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Attendance</h2>
+        <p className="text-muted-foreground">Pick a class and date, then tick who attended.</p>
       </div>
 
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Select Class</label>
-            <select
-              value={selectedCourse || ''}
-              onChange={handleCourseChange}
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-            >
-              <option value="">-- Choose a class --</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code} - {c.name}
-                </option>
-              ))}
+      <Card>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label>Class</Label>
+            <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+              {classes.map((c) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
             </select>
           </div>
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
           <div className="flex items-end">
-            <label className="block text-sm font-medium text-foreground mb-2">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="ml-2 px-3 py-2 border border-border rounded-md focus:outline-none "
-            />
+            <Button onClick={save} disabled={saving || students.length === 0} className="w-full">
+              {saving ? 'Saving...' : 'Save attendance'}
+            </Button>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {selectedCourse && students.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-muted border-b border-border">
-                <tr>
-                  <th className="px-6 py-3 text-sm font-semibold text-foreground">Student</th>
-                  <th className="px-6 py-3 text-sm font-semibold text-foreground">Email</th>
-                  <th className="px-6 py-3 text-sm font-semibold text-foreground text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {students.map((s) => {
-                  const isPresent = attendance[s.id] !== false;
-                  return (
-                    <tr key={s.id} className="hover:bg-muted">
-                      <td className="px-6 py-4 text-foreground font-medium">{s.name}</td>
-                      <td className="px-6 py-4 text-muted-foreground text-sm">{s.email}</td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center gap-3">
-                          <button
-                            onClick={() => toggleAttendance(s.id)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition ${
-                              isPresent
-                                ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                                : 'bg-red-100 text-red-600 hover:bg-red-200'
-                            }`}
-                          >
-                            {isPresent ? (
-                              <CheckCircle size={16} />
-                            ) : (
-                              <XCircle size={16} />
-                            )}
-                          </button>
-                          <span className={`text-sm font-medium ${
-                            isPresent ? 'text-green-700' : 'text-red-700'
-                          }`}>
-                            {isPresent ? 'Present' : 'Absent'}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : selectedCourse && students.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No students enrolled in this class.
-          </div>
-        ) : null}
+      {message && (
+        <p className={`rounded-md border px-3 py-2 text-sm ${message.ok ? 'bg-muted' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>{message.text}</p>
+      )}
 
-        {selectedCourse && students.length > 0 && (
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={saveAttendance}
-              disabled={saving}
-              className="bg-primary hover:bg-primary/90 disabled:bg-muted-foreground text-primary-foreground px-6 py-2 rounded-md text-sm font-medium transition"
-            >
-              {saving ? 'Saving...' : 'Save Attendance'}
-            </button>
-          </div>
-        )}
-      </div>
+      <Card className="py-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Student</TableHead>
+              <TableHead>Student ID</TableHead>
+              <TableHead className="pr-6 text-right">Present</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {students.length === 0 && <TableRow><TableCell colSpan={3} className="py-6 text-center text-muted-foreground">No students enrolled in this class.</TableCell></TableRow>}
+            {students.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell className="pl-6 font-medium">{s.name}</TableCell>
+                <TableCell>{s.student_id || '-'}</TableCell>
+                <TableCell className="pr-6 text-right">
+                  <input
+                    type="checkbox"
+                    aria-label={`Present: ${s.name}`}
+                    checked={!!present[s.id]}
+                    onChange={(e) => setPresent({ ...present, [s.id]: e.target.checked })}
+                    className="size-4"
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Card className="py-0">
+        <CardHeader className="pt-6"><CardTitle>Totals for this class</CardTitle></CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Student</TableHead>
+              <TableHead>Held</TableHead>
+              <TableHead className="pr-6">Attended</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {totals.length === 0 && <TableRow><TableCell colSpan={3} className="py-6 text-center text-muted-foreground">No attendance recorded yet.</TableCell></TableRow>}
+            {totals.map((t) => (
+              <TableRow key={t.student_id}>
+                <TableCell className="pl-6">{t.student_name}</TableCell>
+                <TableCell>{t.classes_held}</TableCell>
+                <TableCell className="pr-6">{t.classes_attended}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

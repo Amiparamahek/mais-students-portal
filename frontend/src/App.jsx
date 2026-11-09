@@ -22,11 +22,6 @@ import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminDocuments from './pages/AdminDocuments';
 import AdminGrades from './pages/AdminGrades';
 import AdminExams from './pages/AdminExams';
-import LecturerClasses from './pages/LecturerClasses';
-import LecturerAttendance from './pages/LecturerAttendance';
-import LecturerAnnouncements from './pages/LecturerAnnouncements';
-import LecturerDocuments from './pages/LecturerDocuments';
-import LecturerLayout from './components/LecturerLayout';
 import StudentFindCourses from './pages/StudentFindCourses';
 
 // Student pages
@@ -82,27 +77,6 @@ function App() {
                   <Route path="exams" element={<AdminExams />} />
                 </Routes>
               </AdminLayout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-
-        {/* Lecturer routes */}
-        <Route
-          path="/lecturer/*"
-          element={
-            user && user.role === 'lecturer' ? (
-              <LecturerLayout>
-                <Routes>
-                  <Route index element={<LecturerClasses />} />
-                  <Route path="classes" element={<LecturerClasses />} />
-                  <Route path="attendance" element={<LecturerAttendance />} />
-                  <Route path="announcements" element={<LecturerAnnouncements />} />
-                  <Route path="documents" element={<LecturerDocuments />} />
-                  <Route path="profile" element={<StudentProfile />} />
-                </Routes>
-              </LecturerLayout>
             ) : (
               <Navigate to="/login" replace />
             )

@@ -1,233 +1,144 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import api from '../services/api';
-import { Plus, Edit2, Trash2, Search, Clock } from 'lucide-react';
+import { joinSlot, splitSlot } from '../lib/date';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const empty = { course_id: '', day: 'Monday', start: '09:00', end: '10:30', room: '' };
 
 export default function AdminTimetable() {
-  const [timetable, setTimetable] = useState([]);
+  const [slots, setSlots] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    course_id: '',
-    day: 'Monday',
-    time: '09:00',
-    room: '',
-    week: 'All',
-  });
+  const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
+  const load = async () => {
+    const [t, c] = await Promise.all([api.get('/admin/timetable'), api.get('/admin/courses')]);
+    setSlots(t.data || []);
+    setCourses(c.data || []);
+  };
   useEffect(() => {
-    fetchData();
+    load().catch((e) => setError(e.response?.data?.message || 'Failed to load timetable'));
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const [tRes, cRes] = await Promise.all([
-        api.get('/admin/timetable'),
-        api.get('/admin/courses'),
-      ]);
-      setTimetable(tRes.data || []);
-      setCourses(cRes.data || []);
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
-    } finally {
-      setLoading(false);
-    }
+  const startEdit = (s) => {
+    const { start, end } = splitSlot(s.time);
+    setEditingId(s.id);
+    setForm({ course_id: s.course_id, day: s.day, start, end, room: s.room || '' });
   };
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    setError('');
+    if (form.end <= form.start) return setError('End time must be after start time');
+    setSaving(true);
+    const body = { course_id: Number(form.course_id), day: form.day, time: joinSlot(form.start, form.end), room: form.room };
     try {
-      if (editingId) {
-        await api.put(`/admin/timetable/${editingId}`, form);
-      } else {
-        await api.post('/admin/timetable', form);
-      }
-      setShowForm(false);
-      setForm({ course_id: '', day: 'Monday', time: '09:00', room: '', week: 'All' });
+      if (editingId) await api.put(`/admin/timetable/${editingId}`, body);
+      else await api.post('/admin/timetable', body);
+      setForm(empty);
       setEditingId(null);
-      fetchData();
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save timetable entry');
+      setError(err.response?.data?.message || 'Failed to save slot');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const deleteSlot = async (id) => {
+  const remove = async (id) => {
     if (!confirm('Delete this timetable slot?')) return;
     try {
       await api.delete(`/admin/timetable/${id}`);
-      fetchData();
+      await load();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete');
+      setError(err.response?.data?.message || 'Failed to delete');
     }
   };
 
-  const courseName = (id) => {
-    const c = courses.find((x) => x.id === id);
-    return c ? `${c.code} - ${c.name}` : 'Unknown';
-  };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Class Timetable</h2>
-          <p className="text-muted-foreground">Manage weekly class schedule.</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingId(null);
-            setForm({ course_id: '', day: 'Monday', time: '09:00', room: '', week: 'All' });
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-        >
-          <Plus size={18} /> Add Slot
-        </button>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Timetable</h2>
+        <p className="text-muted-foreground">Weekly class times. Students see the slots for their own classes.</p>
       </div>
 
-      {showForm && (
-        <div className="bg-card border border-border rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            {editingId ? 'Edit Slot' : 'Add Timetable Slot'}
-          </h3>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Course</label>
-              <select
-                required
-                value={form.course_id}
-                onChange={(e) => setForm({ ...form, course_id: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              >
-                <option value="">-- Select course --</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} - {c.name}
-                  </option>
-                ))}
+      <Card>
+        <CardHeader>
+          <CardTitle>{editingId ? 'Edit slot' : 'Add slot'}</CardTitle>
+          <CardDescription>Times are campus local time.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+          <form onSubmit={submit} className="grid gap-4 md:grid-cols-6">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Class</Label>
+              <select required value={form.course_id} onChange={(e) => setForm({ ...form, course_id: e.target.value })}>
+                <option value="">Choose class</option>
+                {courses.map((c) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Day</label>
-              <select
-                value={form.day}
-                onChange={(e) => setForm({ ...form, day: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              >
-                {DAYS.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
+            <div className="space-y-2">
+              <Label>Day</Label>
+              <select value={form.day} onChange={(e) => setForm({ ...form, day: e.target.value })}>
+                {DAYS.map((d) => <option key={d}>{d}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Time</label>
-              <input
-                type="time"
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
+            <div className="space-y-2">
+              <Label>Start</Label>
+              <Input type="time" required value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Room</label>
-              <input
-                type="text"
-                value={form.room}
-                onChange={(e) => setForm({ ...form, room: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
-              />
+            <div className="space-y-2">
+              <Label>End</Label>
+              <Input type="time" required value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} />
             </div>
-            <div className="md:col-span-4 flex gap-3 pt-2">
-              <button
-                type="submit"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-              >
-                {editingId ? 'Update Slot' : 'Create Slot'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingId(null);
-                }}
-                className="flex-1 bg-secondary hover:bg-accent text-foreground px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Cancel
-              </button>
+            <div className="space-y-2">
+              <Label>Room</Label>
+              <Input placeholder="A1" value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} />
+            </div>
+            <div className="flex gap-3 md:col-span-6">
+              <Button type="submit" disabled={saving}>{editingId ? 'Save slot' : 'Add slot'}</Button>
+              {editingId && <Button type="button" variant="outline" onClick={() => { setEditingId(null); setForm(empty); }}>Cancel</Button>}
             </div>
           </form>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Course</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Day</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Time</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Room</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Week</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {timetable.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                  No timetable slots yet.
-                </td>
-              </tr>
-            ) : (
-              timetable.map((slot) => (
-                <tr key={slot.id} className="hover:bg-muted">
-                  <td className="px-6 py-4 text-foreground font-medium">{courseName(slot.course_id)}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{slot.day}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{slot.time}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{slot.room || '-'}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{slot.week || 'All'}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => {
-                        const c = courses.find((x) => x.id === slot.course_id);
-                        setEditingId(slot.id);
-                        setForm({
-                          course_id: slot.course_id,
-                          day: slot.day,
-                          time: slot.time,
-                          room: slot.room || '',
-                          week: slot.week || 'All',
-                        });
-                        setShowForm(true);
-                      }}
-                      className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
-                    >
-                      <Edit2 size={16} className="inline mr-1" /> Edit
-                    </button>
-                    <button
-                      onClick={() => deleteSlot(slot.id)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
-                    >
-                      <Trash2 size={16} className="inline mr-1" /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Card className="py-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Class</TableHead>
+              <TableHead>Day</TableHead>
+              <TableHead>Time</TableHead>
+              <TableHead>Room</TableHead>
+              <TableHead className="pr-6 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {slots.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No timetable slots yet.</TableCell></TableRow>}
+            {slots.map((s) => (
+              <TableRow key={s.id}>
+                <TableCell className="pl-6 font-medium">{s.course_code} - {s.course_name}</TableCell>
+                <TableCell>{s.day}</TableCell>
+                <TableCell>{s.time}</TableCell>
+                <TableCell>{s.room || '-'}</TableCell>
+                <TableCell className="pr-6 text-right">
+                  <Button variant="ghost" size="icon-sm" aria-label="Edit slot" onClick={() => startEdit(s)}><Pencil /></Button>
+                  <Button variant="ghost" size="icon-sm" aria-label="Delete slot" onClick={() => remove(s.id)}><Trash2 /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }

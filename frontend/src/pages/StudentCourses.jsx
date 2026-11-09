@@ -1,63 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../services/api';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function StudentCourses() {
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [slots, setSlots] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/courses/my-enrollments')
-      .then((res) => setCourses(res.data || []))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+    Promise.all([api.get('/courses/my-enrollments'), api.get('/timetable')])
+      .then(([c, t]) => {
+        setCourses(c.data || []);
+        setSlots(t.data || []);
+      })
+      .catch((e) => setError(e.response?.data?.message || 'Failed to load classes'));
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">My Courses</h2>
-        <p className="text-muted-foreground">Classes you are enrolled in.</p>
+        <h2 className="text-2xl font-bold tracking-tight">My classes</h2>
+        <p className="text-muted-foreground">The classes you are enrolled in, with their weekly times. Use Find Courses to register for more.</p>
       </div>
-
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Code</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Course Name</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Credits</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Lecturer</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Semester</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {courses.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                  No courses enrolled.
-                </td>
-              </tr>
-            ) : (
-              courses.map((c) => (
-                <tr key={c.id} className="hover:bg-muted">
-                  <td className="px-6 py-4 text-foreground font-medium">{c.code}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{c.name}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{c.credits}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{c.lecturer || '-'}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{c.semester || '-'}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {courses.length === 0 && !error && <p className="text-sm text-muted-foreground">You are not enrolled in any class yet.</p>}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {courses.map((c) => {
+          const mine = slots.filter((s) => s.course_id === c.course_id);
+          return (
+            <Card key={c.id}>
+              <CardHeader>
+                <CardTitle>{c.code} - {c.name}</CardTitle>
+                <CardDescription>{c.semester || '-'} · {c.credits} credits · {c.lecturer || 'Lecturer not set'}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {mine.length === 0 && <p className="text-sm text-muted-foreground">No timetable slot set yet.</p>}
+                {mine.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between text-sm">
+                    <span>{s.day}</span>
+                    <span className="flex gap-2"><Badge variant="secondary">{s.time}</Badge><Badge variant="outline">Room {s.room || '-'}</Badge></span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

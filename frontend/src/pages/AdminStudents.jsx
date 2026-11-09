@@ -197,17 +197,6 @@ export default function AdminStudents() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Role</label>
-              <select
-                value={form.role || 'student'}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                className="w-full px-3 py-2 border border-border rounded-md bg-card"
-              >
-                <option value="student">Student</option>
-                <option value="lecturer">Lecturer</option>
-              </select>
-            </div>
-            <div>
               <label className="block text-sm font-medium text-foreground mb-1">
                 Password
               </label>
@@ -299,9 +288,6 @@ export default function AdminStudents() {
                 <tr key={s.id} className="hover:bg-muted">
                   <td className="px-6 py-4 text-foreground font-medium">
                     {s.name}
-                    {s.role === 'lecturer' && (
-                      <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-medium">Lecturer</span>
-                    )}
                   </td>
                   <td className="px-6 py-4 text-muted-foreground">{s.email}</td>
                   <td className="px-6 py-4 text-muted-foreground text-sm">{s.student_id || '-'}</td>

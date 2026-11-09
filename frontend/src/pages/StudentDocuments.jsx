@@ -1,76 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Download } from 'lucide-react';
 import api from '../services/api';
-import { Download, FileText } from 'lucide-react';
+import { openDocument } from '../lib/download';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function StudentDocuments() {
-  const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [docs, setDocs] = useState([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/documents')
-      .then((res) => setDocuments(res.data || []))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+    api.get('/documents').then((r) => setDocs(r.data || [])).catch((e) => setError(e.response?.data?.message || 'Failed to load documents'));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
-      </div>
-    );
-  }
+  const open = async (d) => {
+    setError('');
+    try {
+      await openDocument(d);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not open document');
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Documents</h2>
-        <p className="text-muted-foreground">Download shared study materials.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Documents</h2>
+        <p className="text-muted-foreground">Study materials shared with you, including those for your classes.</p>
       </div>
-
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-muted border-b border-border">
-            <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Title</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Category</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground">Date</th>
-              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Download</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {documents.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                  No documents available.
-                </td>
-              </tr>
-            ) : (
-              documents.map((d) => (
-                <tr key={d.id} className="hover:bg-muted">
-                  <td className="px-6 py-4 text-foreground font-medium">{d.title}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{d.category || '-'}</td>
-                  <td className="px-6 py-4 text-muted-foreground text-sm">{new Date(d.uploaded_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-right">
-                    {d.file_url ? (
-                      <a
-                        href={d.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-green-600 hover:text-green-800 text-sm font-medium"
-                      >
-                        <Download size={16} /> Download
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Not available</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      <Card className="py-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Title</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Class</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="pr-6 text-right">Download</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {docs.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No documents shared yet.</TableCell></TableRow>}
+            {docs.map((d) => (
+              <TableRow key={d.id}>
+                <TableCell className="pl-6 font-medium">{d.title}</TableCell>
+                <TableCell>{d.category || '-'}</TableCell>
+                <TableCell>{d.course_code || 'All students'}</TableCell>
+                <TableCell>{new Date(d.uploaded_at + 'Z').toLocaleDateString()}</TableCell>
+                <TableCell className="pr-6 text-right">
+                  {d.stored_name || d.file_url ? (
+                    <Button variant="outline" size="sm" onClick={() => open(d)}><Download /> {d.stored_name ? 'Download' : 'Open link'}</Button>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">No file attached</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   );
 }
