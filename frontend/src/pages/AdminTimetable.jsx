@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import { Pencil, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { joinSlot, splitSlot } from '../lib/date';
@@ -24,7 +25,7 @@ export default function AdminTimetable() {
     setSlots(t.data || []);
     setCourses(c.data || []);
   };
-  useEffect(() => {
+  useLiveFetch(() => {
     load().catch((e) => setError(e.response?.data?.message || 'Failed to load timetable'));
   }, []);
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 
@@ -19,7 +20,7 @@ export default function AdminStudents() {
   });
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
+  useLiveFetch(() => {
     fetchStudents();
   }, []);
 

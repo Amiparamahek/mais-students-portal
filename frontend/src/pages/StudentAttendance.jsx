@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,7 +10,7 @@ export default function StudentAttendance() {
   const [log, setLog] = useState([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  useLiveFetch(() => {
     Promise.all([api.get('/attendance/my-attendance'), api.get('/attendance/my-log')])
       .then(([t, l]) => {
         setTotals(t.data || []);

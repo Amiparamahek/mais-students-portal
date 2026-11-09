@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 export default function StudentExams() {
   const [exams, setExams] = useState([]);
 
-  useEffect(() => {
+  useLiveFetch(() => {
     api.get('/exams').then((res) => setExams(res.data || [])).catch(console.error);
   }, []);
 

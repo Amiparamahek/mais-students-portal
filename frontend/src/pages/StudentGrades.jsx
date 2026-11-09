@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 
 export default function StudentGrades() {
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useLiveFetch(() => {
     api.get('/grades/my-grades')
       .then((res) => setGrades(res.data || []))
       .catch((err) => console.error(err))

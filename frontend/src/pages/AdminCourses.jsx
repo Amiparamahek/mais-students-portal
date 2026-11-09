@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import { Pencil, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ export default function AdminCourses() {
     setCourses(c.data || []);
     setPeople(p.data || []);
   };
-  useEffect(() => {
+  useLiveFetch(() => {
     load().catch((e) => setError(e.response?.data?.message || 'Failed to load classes'));
   }, []);
 

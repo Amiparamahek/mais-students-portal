@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,7 +9,7 @@ export default function StudentCourses() {
   const [slots, setSlots] = useState([]);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  useLiveFetch(() => {
     Promise.all([api.get('/courses/my-enrollments'), api.get('/timetable')])
       .then(([c, t]) => {
         setCourses(c.data || []);

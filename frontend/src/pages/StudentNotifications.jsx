@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import { Bell, BellBadge } from '@duo-icons/react';
 import api from '../services/api';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ export default function StudentNotifications() {
   const [items, setItems] = useState([]);
 
   const load = () => api.get('/notifications').then((res) => setItems(res.data || [])).catch(console.error);
-  useEffect(() => {
+  useLiveFetch(() => {
     load();
   }, []);
 

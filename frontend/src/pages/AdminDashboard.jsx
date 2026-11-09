@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { Approved, Bell, Book, Calendar } from '@duo-icons/react';
@@ -15,7 +16,7 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useLiveFetch(() => {
     fetchStats();
   }, []);
 

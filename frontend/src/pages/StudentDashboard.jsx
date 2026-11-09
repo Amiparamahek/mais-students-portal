@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import { Link } from 'react-router-dom';
 import { Approved, Award, Book, Calendar, Clipboard } from '@duo-icons/react';
 import api from '../services/api';
@@ -16,7 +17,7 @@ export default function StudentDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useLiveFetch(() => {
     Promise.all([
       api.get('/courses/my-enrollments'),
       api.get('/grades/my-grades'),

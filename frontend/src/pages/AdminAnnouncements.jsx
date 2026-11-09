@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { Plus, FileText, Trash2 } from 'lucide-react';
 
@@ -8,7 +9,7 @@ export default function AdminAnnouncements() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', content: '' });
 
-  useEffect(() => {
+  useLiveFetch(() => {
     fetchAnnouncements();
   }, []);
 

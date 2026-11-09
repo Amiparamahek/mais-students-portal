@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { WEEKDAYS, weekdayOf, slotStart } from '../lib/date';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ export default function StudentTimetable() {
   const [error, setError] = useState('');
   const today = weekdayOf();
 
-  useEffect(() => {
+  useLiveFetch(() => {
     api.get('/timetable')
       .then((r) => setSlots(r.data || []))
       .catch((e) => setError(e.response?.data?.message || 'Failed to load timetable'))

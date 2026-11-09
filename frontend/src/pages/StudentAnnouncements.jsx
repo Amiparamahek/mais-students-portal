@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 
 export default function StudentAnnouncements() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useLiveFetch(() => {
     api.get('/announcements')
       .then((res) => setAnnouncements(res.data || []))
       .catch((err) => console.error(err))
