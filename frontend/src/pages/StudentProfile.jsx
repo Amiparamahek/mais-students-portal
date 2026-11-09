@@ -6,7 +6,26 @@ import { User } from 'lucide-react';
 export default function StudentProfile() {
   const { user, login } = useAuth();
   const [profile, setProfile] = useState(user);
-  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage(null);
+    try {
+      await api.post('/auth/change-password', { currentPassword, newPassword });
+      setMessage({ ok: true, text: 'Password updated. Use the new password next time you sign in.' });
+      setCurrentPassword('');
+      setNewPassword('');
+    } catch (err) {
+      setMessage({ ok: false, text: err.response?.data?.message || 'Could not update password' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     api.get('/auth/me')
@@ -41,26 +60,43 @@ export default function StudentProfile() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <form onSubmit={changePassword} className="max-w-md space-y-4">
+          <h4 className="font-semibold text-foreground">Change password</h4>
+          {message && (
+            <p className={`rounded-md border px-3 py-2 text-sm ${message.ok ? 'border-green-200 bg-green-50 text-green-700' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
+              {message.text}
+            </p>
+          )}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">New Password</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Current password</label>
             <input
               type="password"
-              placeholder="Enter new password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">New password</label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              placeholder="At least 6 characters"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-md"
             />
           </div>
           <button
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-            onClick={() => {
-              alert('Password update feature coming soon!');
-            }}
+            type="submit"
+            disabled={saving}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
           >
-            Update Password
+            {saving ? 'Updating...' : 'Update password'}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
