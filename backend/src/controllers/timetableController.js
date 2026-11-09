@@ -1,4 +1,5 @@
 const Timetable = require('../models/Timetable');
+const { notifyStudents } = require('../utils/notify');
 
 const getAll = async (req, res) => {
   try {
@@ -18,6 +19,7 @@ const create = async (req, res) => {
       return res.status(400).json({ message: 'Course, day, and time are required' });
     }
     const result = await Timetable.create({ courseId, day, time, room, week });
+    await notifyStudents('Timetable updated', `New class added on ${day} at ${time}.`);
     res.status(201).json({ id: result.id, message: 'Timetable entry created' });
   } catch (err) {
     console.error(err);
@@ -33,6 +35,7 @@ const update = async (req, res) => {
     if (result.changes === 0) {
       return res.status(404).json({ message: 'Timetable entry not found' });
     }
+    await notifyStudents('Timetable updated', 'A class in your timetable was changed.');
     res.json({ message: 'Timetable entry updated' });
   } catch (err) {
     console.error(err);

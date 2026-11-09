@@ -59,6 +59,28 @@ async function seed() {
       });
     }
 
+    // Create courses
+    const courses = [
+      ['CT101', 'Cloud Technologies', 6, 'Prof. Ján Novák', 'Winter 2026/27', 'Introduction to cloud computing and virtualization'],
+      ['DS201', 'Data Structures and Algorithms', 6, 'Dr. Mária Kováčová', 'Winter 2026/27', 'Fundamental data structures and algorithm analysis'],
+      ['WD301', 'Web Development', 5, 'Ing. Peter Šveda', 'Winter 2026/27', 'Modern web technologies: HTML, CSS, JavaScript, React'],
+      ['DB401', 'Database Systems', 5, 'Prof. Ján Novák', 'Winter 2026/27', 'SQL, database design, and normalization'],
+      ['OS501', 'Operating Systems', 6, 'Dr. Mária Kováčová', 'Summer 2026/27', 'OS concepts, processes, memory management'],
+    ];
+
+    for (const [code, name, credits, lecturer, semester, desc] of courses) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          `INSERT OR IGNORE INTO courses (code, name, credits, lecturer, semester, description) VALUES (?, ?, ?, ?, ?, ?)`,
+          [code, name, credits, lecturer, semester, desc],
+          function (err) {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    }
+
     // Get all student IDs for seeding related data
     const allStudents = await new Promise((resolve, reject) => {
       db.all("SELECT id, email FROM users WHERE role = 'student'", (err, rows) => {
@@ -108,28 +130,6 @@ async function seed() {
           );
         });
       }
-    }
-
-    // Create courses
-    const courses = [
-      ['CT101', 'Cloud Technologies', 6, 'Prof. Ján Novák', 'Winter 2026/27', 'Introduction to cloud computing and virtualization'],
-      ['DS201', 'Data Structures and Algorithms', 6, 'Dr. Mária Kováčová', 'Winter 2026/27', 'Fundamental data structures and algorithm analysis'],
-      ['WD301', 'Web Development', 5, 'Ing. Peter Šveda', 'Winter 2026/27', 'Modern web technologies: HTML, CSS, JavaScript, React'],
-      ['DB401', 'Database Systems', 5, 'Prof. Ján Novák', 'Winter 2026/27', 'SQL, database design, and normalization'],
-      ['OS501', 'Operating Systems', 6, 'Dr. Mária Kováčová', 'Summer 2026/27', 'OS concepts, processes, memory management'],
-    ];
-
-    for (const [code, name, credits, lecturer, semester, desc] of courses) {
-      await new Promise((resolve, reject) => {
-        db.run(
-          `INSERT OR IGNORE INTO courses (code, name, credits, lecturer, semester, description) VALUES (?, ?, ?, ?, ?, ?)`,
-          [code, name, credits, lecturer, semester, desc],
-          function (err) {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
     }
 
     // Seed announcements

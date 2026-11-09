@@ -1,4 +1,5 @@
 const Document = require('../models/Document');
+const { notifyStudents } = require('../utils/notify');
 
 const getAll = async (req, res) => {
   try {
@@ -17,6 +18,7 @@ const create = async (req, res) => {
       return res.status(400).json({ message: 'Title is required' });
     }
     const result = await Document.create({ title, fileUrl: fileUrl || file_url, category });
+    await notifyStudents('New document shared', title);
     res.status(201).json({ id: result.id, message: 'Document created' });
   } catch (err) {
     console.error(err);

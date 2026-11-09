@@ -36,6 +36,24 @@ const Attendance = {
     });
   },
 
+  // Record one more class for a student: held +1, attended +1 if present.
+  markClass: ({ studentId, courseId, present }) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `INSERT INTO attendance (student_id, course_id, classes_held, classes_attended)
+         VALUES (?, ?, 1, ?)
+         ON CONFLICT(student_id, course_id) DO UPDATE SET
+           classes_held = classes_held + 1,
+           classes_attended = classes_attended + excluded.classes_attended`,
+        [studentId, courseId, present ? 1 : 0],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    });
+  },
+
   createOrUpdate: ({ studentId, courseId, classesHeld, classesAttended }) => {
     return new Promise((resolve, reject) => {
       db.run(

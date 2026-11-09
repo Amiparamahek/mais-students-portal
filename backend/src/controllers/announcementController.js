@@ -1,4 +1,5 @@
 const Announcement = require('../models/Announcement');
+const { notifyStudents } = require('../utils/notify');
 
 const getAll = async (req, res) => {
   try {
@@ -17,6 +18,7 @@ const create = async (req, res) => {
       return res.status(400).json({ message: 'Title and content are required' });
     }
     const result = await Announcement.create({ title, content, createdBy: req.user.id, isPublished });
+    await notifyStudents('New announcement', title);
     res.status(201).json({ id: result.id, message: 'Announcement created' });
   } catch (err) {
     console.error(err);

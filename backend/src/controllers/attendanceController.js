@@ -16,11 +16,10 @@ const createOrUpdate = async (req, res) => {
     if (Array.isArray(req.body.records)) {
       const { date } = req.body;
       for (const record of req.body.records) {
-        await Attendance.createOrUpdate({
+        await Attendance.markClass({
           studentId: record.student_id,
           courseId: record.course_id,
-          classesHeld: record.classes_held || 1,
-          classesAttended: record.present ? 1 : 0,
+          present: !!record.present,
         });
       }
       return res.json({ message: 'Attendance saved successfully' });

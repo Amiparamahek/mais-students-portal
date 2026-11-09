@@ -1,3 +1,4 @@
+const { notifyStudents } = require('../utils/notify');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 
@@ -88,6 +89,9 @@ const enroll = async (req, res) => {
       return res.status(400).json({ message: 'Enrollment failed' });
     }
 
+    if (req.user.role === 'admin') {
+      await notifyStudents('Enrolled in a class', 'You were added to a new class.', studentId);
+    }
     res.status(201).json({ message: 'Enrolled successfully' });
   } catch (err) {
     console.error(err);
