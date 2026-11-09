@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
   BookOpen,
-  CheckClock,
+  CheckCircle,
   Calendar,
   Bell,
   FileText,
@@ -17,7 +17,7 @@ import {
 const studentMenu = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
   { name: 'My Courses', icon: BookOpen, path: '/student/courses' },
-  { name: 'Attendance', icon: CheckClock, path: '/student/attendance' },
+  { name: 'Attendance', icon: CheckCircle, path: '/student/attendance' },
   { name: 'Grades', icon: BookOpen, path: '/student/grades' },
   { name: 'Timetable', icon: Calendar, path: '/student/timetable' },
   { name: 'Announcements', icon: Bell, path: '/student/announcements' },

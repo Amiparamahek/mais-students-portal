@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../services/api';
 import { Plus, FileText, Trash2 } from 'lucide-react';
 
 export default function AdminAnnouncements() {

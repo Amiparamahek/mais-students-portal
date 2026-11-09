@@ -110,7 +110,18 @@ const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, student_id, faculty, programme, academic_year, role } = req.body;
-    const result = await User.update(id, { name, email, student_id, faculty, programme, academic_year, role });
+    const fields = {};
+    if (name !== undefined) fields.name = name;
+    if (email !== undefined) fields.email = email;
+    if (student_id !== undefined) fields.student_id = student_id;
+    if (faculty !== undefined) fields.faculty = faculty;
+    if (programme !== undefined) fields.programme = programme;
+    if (academic_year !== undefined) fields.academic_year = academic_year;
+    if (role !== undefined) fields.role = role;
+    if (Object.keys(fields).length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+    const result = await User.update(id, fields);
     if (result.changes === 0) {
       return res.status(404).json({ message: 'Student not found' });
     }

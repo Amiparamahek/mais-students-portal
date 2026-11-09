@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
   academic_year TEXT,
   study_status TEXT DEFAULT 'Full-time',
   is_active INTEGER DEFAULT 1,
+  avatar_url TEXT,
+  phone TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -27,6 +29,7 @@ CREATE TABLE IF NOT EXISTS courses (
   lecturer TEXT,
   semester TEXT,
   description TEXT,
+  created_by INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

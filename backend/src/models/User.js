@@ -12,7 +12,7 @@ const User = {
 
   findById: (id) => {
     return new Promise((resolve, reject) => {
-      db.get('SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, created_at FROM users WHERE id = ?', [id], (err, row) => {
+      db.get('SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, avatar_url, phone, created_at FROM users WHERE id = ?', [id], (err, row) => {
         if (err) reject(err);
         else resolve(row);
       });
