@@ -34,4 +34,30 @@ const Timetable = {
   },
 };
 
+  update: (id, fields) => {
+    const keys = Object.keys(fields);
+    const values = Object.values(fields);
+    const setClause = keys.map((key, i) => `${key} = ?`).join(', ');
+    return new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE timetable SET ${setClause} WHERE id = ?`,
+        [...values, id],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    }),
+  },
+
+  remove: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run('DELETE FROM timetable WHERE id = ?', [id], function (err) {
+        if (err) reject(err);
+        else resolve({ changes: this.changes });
+      });
+    }),
+  },
+};
+
 module.exports = Timetable;

@@ -24,4 +24,14 @@ const Document = {
   },
 };
 
+  remove: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run('DELETE FROM documents WHERE id = ?', [id], function (err) {
+        if (err) reject(err);
+        else resolve({ changes: this.changes });
+      });
+    }),
+  },
+};
+
 module.exports = Document;
