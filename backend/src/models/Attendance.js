@@ -19,6 +19,23 @@ const Attendance = {
     });
   },
 
+  getReport: () => {
+    return new Promise((resolve, reject) => {
+      db.all(
+        `SELECT a.*, c.code, c.name,
+                ROUND(CASE WHEN a.classes_held > 0 THEN (a.classes_attended * 100.0 / a.classes_held) ELSE 0 END, 1) as percentage
+         FROM attendance a
+         JOIN courses c ON a.course_id = c.id
+         ORDER BY c.code, a.student_id`,
+        [],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+  },
+
   createOrUpdate: ({ studentId, courseId, classesHeld, classesAttended }) => {
     return new Promise((resolve, reject) => {
       db.run(

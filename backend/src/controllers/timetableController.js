@@ -24,4 +24,33 @@ const create = async (req, res) => {
   }
 };
 
-module.exports = { getAll, create };
+const update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const fields = req.body;
+    const result = await Timetable.update(id, fields);
+    if (result.changes === 0) {
+      return res.status(404).json({ message: 'Timetable entry not found' });
+    }
+    res.json({ message: 'Timetable entry updated' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Timetable.remove(id);
+    if (result.changes === 0) {
+      return res.status(404).json({ message: 'Timetable entry not found' });
+    }
+    res.json({ message: 'Timetable entry deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { getAll, create, update, remove };

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   programme TEXT,
   academic_year TEXT,
   study_status TEXT DEFAULT 'Full-time',
+  is_active INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

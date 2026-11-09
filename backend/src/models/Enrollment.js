@@ -44,6 +44,23 @@ const Enrollment = {
     });
   },
 
+  getByCourse: (courseId) => {
+    return new Promise((resolve, reject) => {
+      db.all(
+        `SELECT u.id, u.name, u.email, u.student_id, u.faculty, u.programme, u.academic_year
+         FROM enrollments e
+         JOIN users u ON e.student_id = u.id
+         WHERE e.course_id = ? AND e.status = 'enrolled'
+         ORDER BY u.name`,
+        [courseId],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+  },
+
   isEnrolled: (studentId, courseId) => {
     return new Promise((resolve, reject) => {
       db.get(

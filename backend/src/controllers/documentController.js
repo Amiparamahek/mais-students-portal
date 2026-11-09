@@ -24,4 +24,18 @@ const create = async (req, res) => {
   }
 };
 
-module.exports = { getAll, create };
+const remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await Document.remove(id);
+    if (result.changes === 0) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    res.json({ message: 'Document deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { getAll, create, remove };

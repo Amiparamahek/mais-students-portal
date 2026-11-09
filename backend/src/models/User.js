@@ -66,6 +66,44 @@ const User = {
       });
     });
   },
+
+  update: (id, fields) => {
+    const keys = Object.keys(fields);
+    const values = Object.values(fields);
+    const setClause = keys.map((key, i) => `${key} = ?`).join(', ');
+    return new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [...values, id],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    });
+  },
+
+  delete: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run('DELETE FROM users WHERE id = ?', [id], function (err) {
+        if (err) reject(err);
+        else resolve({ changes: this.changes });
+      });
+    });
+  },
+
+  toggleActive: (id, isActive) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE users SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [isActive ? 1 : 0, id],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    });
+  },
 };
 
 module.exports = User;
