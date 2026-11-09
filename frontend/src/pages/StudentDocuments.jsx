@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../services/api';
 import { Download, FileText } from 'lucide-react';
 
 export default function StudentDocuments() {
@@ -16,7 +16,7 @@ export default function StudentDocuments() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
       </div>
     );
   }
@@ -24,33 +24,33 @@ export default function StudentDocuments() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-800">Documents</h2>
-        <p className="text-gray-500">Download shared study materials.</p>
+        <h2 className="text-2xl font-bold text-foreground">Documents</h2>
+        <p className="text-muted-foreground">Download shared study materials.</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-muted border-b border-border">
             <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Title</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Category</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Date</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700 text-right">Download</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Title</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Category</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Date</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Download</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-border">
             {documents.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
                   No documents available.
                 </td>
               </tr>
             ) : (
               documents.map((d) => (
-                <tr key={d.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-gray-800 font-medium">{d.title}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{d.category || '-'}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{new Date(d.uploaded_at).toLocaleDateString()}</td>
+                <tr key={d.id} className="hover:bg-muted">
+                  <td className="px-6 py-4 text-foreground font-medium">{d.title}</td>
+                  <td className="px-6 py-4 text-muted-foreground text-sm">{d.category || '-'}</td>
+                  <td className="px-6 py-4 text-muted-foreground text-sm">{new Date(d.uploaded_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-right">
                     {d.file_url ? (
                       <a
@@ -62,7 +62,7 @@ export default function StudentDocuments() {
                         <Download size={16} /> Download
                       </a>
                     ) : (
-                      <span className="text-gray-400 text-sm">Not available</span>
+                      <span className="text-muted-foreground text-sm">Not available</span>
                     )}
                   </td>
                 </tr>

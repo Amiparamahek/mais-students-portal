@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../services/api';
 import { Plus, Edit2, Trash2, Search, User } from 'lucide-react';
 
 export default function AdminCourses() {
@@ -88,7 +88,7 @@ export default function AdminCourses() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
       </div>
     );
   }
@@ -97,8 +97,8 @@ export default function AdminCourses() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Manage Classes</h2>
-          <p className="text-gray-500">Create and manage courses, enroll students.</p>
+          <h2 className="text-2xl font-bold text-foreground">Manage Classes</h2>
+          <p className="text-muted-foreground">Create and manage courses, enroll students.</p>
         </div>
 
         <div className="flex gap-3">
@@ -108,19 +108,19 @@ export default function AdminCourses() {
               setForm({ code: '', name: '', credits: 3, lecturer: '', semester: '', description: '' });
               setShowForm(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
           >
             <Plus size={18} /> Add Class
           </button>
 
           <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search classes..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-64 px-3 py-2 pl-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-64 px-3 py-2 pl-9 border border-border rounded-md focus:outline-none  text-sm"
             />
           </div>
         </div>
@@ -128,71 +128,71 @@ export default function AdminCourses() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="bg-card border border-border rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {editingId ? 'Edit Class' : 'Add New Class'}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Course Code</label>
               <input
                 type="text"
                 required
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Course Name</label>
               <input
                 type="text"
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Credits</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Credits</label>
               <input
                 type="number"
                 value={form.credits}
                 onChange={(e) => setForm({ ...form, credits: parseInt(e.target.value) || 3 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lecturer</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Lecturer</label>
               <input
                 type="text"
                 value={form.lecturer}
                 onChange={(e) => setForm({ ...form, lecturer: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Semester</label>
               <input
                 type="text"
                 value={form.semester}
                 onChange={(e) => setForm({ ...form, semester: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Description</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
                 rows={2}
               />
             </div>
             <div className="md:col-span-3 flex gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
               >
                 {editingId ? 'Update Class' : 'Create Class'}
               </button>
@@ -202,7 +202,7 @@ export default function AdminCourses() {
                   setShowForm(false);
                   setEditingId(null);
                 }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                className="flex-1 bg-secondary hover:bg-accent text-foreground px-4 py-2 rounded-md text-sm font-medium"
               >
                 Cancel
               </button>
@@ -212,23 +212,23 @@ export default function AdminCourses() {
       )}
 
       {/* Courses Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-muted border-b border-border">
             <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Code</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Name</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Credits</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Lecturer</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Semester</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Enrolled</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700 text-right">Actions</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Code</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Name</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Credits</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Lecturer</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Semester</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Enrolled</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-border">
             {filteredCourses.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
                   No classes found
                 </td>
               </tr>
@@ -238,19 +238,19 @@ export default function AdminCourses() {
                   (s) => s.enrolledCourses?.includes(c.id) || s.enrolled_courses?.includes(c.id)
                 );
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-gray-800 font-medium">{c.code}</td>
-                    <td className="px-6 py-4 text-gray-600">{c.name}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{c.credits}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{c.lecturer || '-'}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">{c.semester || '-'}</td>
-                    <td className="px-6 py-4 text-gray-600 text-sm">
+                  <tr key={c.id} className="hover:bg-muted">
+                    <td className="px-6 py-4 text-foreground font-medium">{c.code}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{c.name}</td>
+                    <td className="px-6 py-4 text-muted-foreground text-sm">{c.credits}</td>
+                    <td className="px-6 py-4 text-muted-foreground text-sm">{c.lecturer || '-'}</td>
+                    <td className="px-6 py-4 text-muted-foreground text-sm">{c.semester || '-'}</td>
+                    <td className="px-6 py-4 text-muted-foreground text-sm">
                       {enrolledStudents.length}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => editCourse(c)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                        className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
                       >
                         <Edit2 size={16} className="inline mr-1" /> Edit
                       </button>

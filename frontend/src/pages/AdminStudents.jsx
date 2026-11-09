@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../services/api';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 
 export default function AdminStudents() {
@@ -97,7 +97,7 @@ export default function AdminStudents() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
       </div>
     );
   }
@@ -106,8 +106,8 @@ export default function AdminStudents() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Manage Students</h2>
-          <p className="text-gray-500">Add, edit, or remove student accounts.</p>
+          <h2 className="text-2xl font-bold text-foreground">Manage Students</h2>
+          <p className="text-muted-foreground">Add, edit, or remove student accounts.</p>
         </div>
 
         <div className="flex gap-3">
@@ -126,19 +126,19 @@ export default function AdminStudents() {
               });
               setShowForm(true);
             }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
           >
             <Plus size={18} /> Add Student
           </button>
 
           <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search students..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-64 px-3 py-2 pl-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-64 px-3 py-2 pl-9 border border-border rounded-md focus:outline-none  text-sm"
             />
           </div>
         </div>
@@ -146,13 +146,13 @@ export default function AdminStudents() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="bg-card border border-border rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {editingId ? 'Edit Student' : 'Add New Student'}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Full Name
               </label>
               <input
@@ -160,11 +160,11 @@ export default function AdminStudents() {
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Email
               </label>
               <input
@@ -172,68 +172,68 @@ export default function AdminStudents() {
                 required
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Student ID
               </label>
               <input
                 type="text"
                 value={form.student_id}
                 onChange={(e) => setForm({ ...form, student_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Password
               </label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Faculty
               </label>
               <input
                 type="text"
                 value={form.faculty}
                 onChange={(e) => setForm({ ...form, faculty: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Programme
               </label>
               <input
                 type="text"
                 value={form.programme}
                 onChange={(e) => setForm({ ...form, programme: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Academic Year
               </label>
               <input
                 type="text"
                 value={form.academic_year}
                 onChange={(e) => setForm({ ...form, academic_year: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div className="md:col-span-3 flex gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
               >
                 {editingId ? 'Update Student' : 'Create Student'}
               </button>
@@ -243,7 +243,7 @@ export default function AdminStudents() {
                   setShowForm(false);
                   setEditingId(null);
                 }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                className="flex-1 bg-secondary hover:bg-accent text-foreground px-4 py-2 rounded-md text-sm font-medium"
               >
                 Cancel
               </button>
@@ -253,34 +253,34 @@ export default function AdminStudents() {
       )}
 
       {/* Students Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-muted border-b border-border">
             <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Name</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Email</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Student ID</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Programme</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Year</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700 text-right">Actions</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Name</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Email</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Student ID</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Programme</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Year</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Status</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-border">
             {filteredStudents.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
                   No students found
                 </td>
               </tr>
             ) : (
               filteredStudents.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-gray-800 font-medium">{s.name}</td>
-                  <td className="px-6 py-4 text-gray-600">{s.email}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{s.student_id || '-'}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{s.programme || '-'}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{s.academic_year || '-'}</td>
+                <tr key={s.id} className="hover:bg-muted">
+                  <td className="px-6 py-4 text-foreground font-medium">{s.name}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{s.email}</td>
+                  <td className="px-6 py-4 text-muted-foreground text-sm">{s.student_id || '-'}</td>
+                  <td className="px-6 py-4 text-muted-foreground text-sm">{s.programme || '-'}</td>
+                  <td className="px-6 py-4 text-muted-foreground text-sm">{s.academic_year || '-'}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       s.is_active === false ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
@@ -291,7 +291,7 @@ export default function AdminStudents() {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => editStudent(s)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                      className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
                     >
                       <Edit2 size={16} className="inline mr-1" /> Edit
                     </button>

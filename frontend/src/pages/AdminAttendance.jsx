@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../services/api';
 import { Search, CheckCircle, XCircle } from 'lucide-react';
 
 export default function AdminAttendance() {
@@ -76,18 +76,18 @@ export default function AdminAttendance() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-800">Mark Attendance</h2>
-        <p className="text-gray-500">Select a class and mark present/absent for each student.</p>
+        <h2 className="text-2xl font-bold text-foreground">Mark Attendance</h2>
+        <p className="text-muted-foreground">Select a class and mark present/absent for each student.</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-card border border-border rounded-lg p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Select Class</label>
             <select
               value={selectedCourse || ''}
               onChange={handleCourseChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
             >
               <option value="">-- Choose a class --</option>
               {courses.map((c) => (
@@ -98,12 +98,12 @@ export default function AdminAttendance() {
             </select>
           </div>
           <div className="flex items-end">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="ml-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="ml-2 px-3 py-2 border border-border rounded-md focus:outline-none "
             />
           </div>
         </div>
@@ -111,20 +111,20 @@ export default function AdminAttendance() {
         {selectedCourse && students.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-sm font-semibold text-gray-700">Student</th>
-                  <th className="px-6 py-3 text-sm font-semibold text-gray-700">Email</th>
-                  <th className="px-6 py-3 text-sm font-semibold text-gray-700 text-center">Status</th>
+                  <th className="px-6 py-3 text-sm font-semibold text-foreground">Student</th>
+                  <th className="px-6 py-3 text-sm font-semibold text-foreground">Email</th>
+                  <th className="px-6 py-3 text-sm font-semibold text-foreground text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {students.map((s) => {
                   const isPresent = attendance[s.id] !== false;
                   return (
-                    <tr key={s.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-gray-800 font-medium">{s.name}</td>
-                      <td className="px-6 py-4 text-gray-600 text-sm">{s.email}</td>
+                    <tr key={s.id} className="hover:bg-muted">
+                      <td className="px-6 py-4 text-foreground font-medium">{s.name}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-sm">{s.email}</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-3">
                           <button
@@ -155,7 +155,7 @@ export default function AdminAttendance() {
             </table>
           </div>
         ) : selectedCourse && students.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No students enrolled in this class.
           </div>
         ) : null}
@@ -165,7 +165,7 @@ export default function AdminAttendance() {
             <button
               onClick={saveAttendance}
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-md text-sm font-medium transition"
+              className="bg-primary hover:bg-primary/90 disabled:bg-muted-foreground text-primary-foreground px-6 py-2 rounded-md text-sm font-medium transition"
             >
               {saving ? 'Saving...' : 'Save Attendance'}
             </button>

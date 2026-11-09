@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../services/api';
 import { Plus, Edit2, Trash2, Search, Clock } from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -72,7 +72,7 @@ export default function AdminTimetable() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground"></div>
       </div>
     );
   }
@@ -81,8 +81,8 @@ export default function AdminTimetable() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Class Timetable</h2>
-          <p className="text-gray-500">Manage weekly class schedule.</p>
+          <h2 className="text-2xl font-bold text-foreground">Class Timetable</h2>
+          <p className="text-muted-foreground">Manage weekly class schedule.</p>
         </div>
         <button
           onClick={() => {
@@ -90,25 +90,25 @@ export default function AdminTimetable() {
             setForm({ course_id: '', day: 'Monday', time: '09:00', room: '', week: 'All' });
             setShowForm(true);
           }}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+          className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
         >
           <Plus size={18} /> Add Slot
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <div className="bg-card border border-border rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
             {editingId ? 'Edit Slot' : 'Add Timetable Slot'}
           </h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Course</label>
               <select
                 required
                 value={form.course_id}
                 onChange={(e) => setForm({ ...form, course_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               >
                 <option value="">-- Select course --</option>
                 {courses.map((c) => (
@@ -119,11 +119,11 @@ export default function AdminTimetable() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Day</label>
               <select
                 value={form.day}
                 onChange={(e) => setForm({ ...form, day: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               >
                 {DAYS.map((d) => (
                   <option key={d} value={d}>{d}</option>
@@ -131,27 +131,27 @@ export default function AdminTimetable() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Time</label>
               <input
                 type="time"
                 value={form.time}
                 onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Room</label>
               <input
                 type="text"
                 value={form.room}
                 onChange={(e) => setForm({ ...form, room: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />
             </div>
             <div className="md:col-span-4 flex gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
               >
                 {editingId ? 'Update Slot' : 'Create Slot'}
               </button>
@@ -161,7 +161,7 @@ export default function AdminTimetable() {
                   setShowForm(false);
                   setEditingId(null);
                 }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                className="flex-1 bg-secondary hover:bg-accent text-foreground px-4 py-2 rounded-md text-sm font-medium"
               >
                 Cancel
               </button>
@@ -170,33 +170,33 @@ export default function AdminTimetable() {
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-muted border-b border-border">
             <tr>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Course</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Day</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Time</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Room</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700">Week</th>
-              <th className="px-6 py-3 text-sm font-semibold text-gray-700 text-right">Actions</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Course</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Day</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Time</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Room</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground">Week</th>
+              <th className="px-6 py-3 text-sm font-semibold text-foreground text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-border">
             {timetable.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                   No timetable slots yet.
                 </td>
               </tr>
             ) : (
               timetable.map((slot) => (
-                <tr key={slot.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-gray-800 font-medium">{courseName(slot.course_id)}</td>
-                  <td className="px-6 py-4 text-gray-600">{slot.day}</td>
-                  <td className="px-6 py-4 text-gray-600">{slot.time}</td>
-                  <td className="px-6 py-4 text-gray-600">{slot.room || '-'}</td>
-                  <td className="px-6 py-4 text-gray-600">{slot.week || 'All'}</td>
+                <tr key={slot.id} className="hover:bg-muted">
+                  <td className="px-6 py-4 text-foreground font-medium">{courseName(slot.course_id)}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{slot.day}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{slot.time}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{slot.room || '-'}</td>
+                  <td className="px-6 py-4 text-muted-foreground">{slot.week || 'All'}</td>
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => {
@@ -211,7 +211,7 @@ export default function AdminTimetable() {
                         });
                         setShowForm(true);
                       }}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                      className="text-foreground hover:text-foreground/70 text-sm font-medium mr-3"
                     >
                       <Edit2 size={16} className="inline mr-1" /> Edit
                     </button>
