@@ -81,24 +81,6 @@ async function seed() {
       });
     }
 
-    // Demo lecturer: teaches CT101 and DB401
-    const lecturerHash = await bcrypt.hash('lecturer123', saltRounds);
-    await new Promise((resolve, reject) => {
-      db.run(
-        `INSERT OR IGNORE INTO users (name, email, password_hash, role, faculty, programme, academic_year)
-         VALUES (?, ?, ?, 'lecturer', ?, ?, ?)`,
-        ['Demo Lecturer', 'lecturer@tuke.sk', lecturerHash, 'Faculty of Electrical Engineering and Informatics', 'Computer Science', '2026/27'],
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
-    await new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE courses SET lecturer_id = (SELECT id FROM users WHERE email = 'lecturer@tuke.sk')
-         WHERE code IN ('CT101', 'DB401')`,
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
-
     // Get all student IDs for seeding related data
     const allStudents = await new Promise((resolve, reject) => {
       db.all("SELECT id, email FROM users WHERE role = 'student'", (err, rows) => {
@@ -148,6 +130,45 @@ async function seed() {
           );
         });
       }
+    }
+
+    // Weekly timetable (campus local time) and exams, so the schedule views have data.
+    const slots = [
+      ['CT101', 'Monday', '09:00-10:30', 'A1'],
+      ['CT101', 'Thursday', '09:00-10:30', 'A1'],
+      ['DB401', 'Monday', '11:00-12:30', 'B2'],
+      ['DB401', 'Wednesday', '11:00-12:30', 'B2'],
+      ['DS201', 'Tuesday', '09:00-10:30', 'C1'],
+      ['DS201', 'Friday', '13:00-14:30', 'C1'],
+      ['WD301', 'Wednesday', '13:00-14:30', 'C3'],
+      ['OS501', 'Thursday', '10:00-11:30', 'D2'],
+    ];
+    for (const [code, day, time, room] of slots) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          `INSERT INTO timetable (course_id, day, time, room, week)
+           SELECT id, ?, ?, ?, 'All' FROM courses WHERE code = ?
+           AND NOT EXISTS (SELECT 1 FROM timetable t WHERE t.course_id = courses.id AND t.day = ? AND t.time = ?)`,
+          [day, time, room, code, day, time],
+          (err) => (err ? reject(err) : resolve())
+        );
+      });
+    }
+    const exams = [
+      ['CT101', 'Mid-term exam', '2026-11-23', '09:00', 'A1'],
+      ['DB401', 'Mid-term exam', '2026-11-25', '11:00', 'B2'],
+      ['CT101', 'Final exam', '2026-12-20', '09:00', 'A1'],
+    ];
+    for (const [code, name, date, time, room] of exams) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          `INSERT INTO exams (course_id, exam_name, exam_date, exam_time, room)
+           SELECT id, ?, ?, ?, ? FROM courses WHERE code = ?
+           AND NOT EXISTS (SELECT 1 FROM exams e WHERE e.course_id = courses.id AND e.exam_name = ?)`,
+          [name, date, time, room, code, name],
+          (err) => (err ? reject(err) : resolve())
+        );
+      });
     }
 
     // Seed announcements

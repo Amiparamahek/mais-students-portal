@@ -43,6 +43,14 @@ const Attendance = {
   getLogForDate: (courseId, classDate) =>
     all('SELECT student_id, present FROM attendance_log WHERE course_id = ? AND class_date = ?', [courseId, classDate]),
 
+  getStudentLog: (studentId) =>
+    all(
+      `SELECT l.class_date, l.present, l.course_id, c.code AS course_code, c.name AS course_name
+       FROM attendance_log l JOIN courses c ON c.id = l.course_id
+       WHERE l.student_id = ? ORDER BY l.class_date DESC, c.code`,
+      [studentId]
+    ),
+
   getTotalsForCourse: (courseId) =>
     all(
       `SELECT a.student_id, a.classes_held, a.classes_attended, u.name AS student_name, u.student_id AS student_number

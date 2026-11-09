@@ -36,3 +36,6 @@ desktop.ini
 # Misc
 npm-debug.log
 coverage/
+
+# Uploaded documents
+backend/uploads/

@@ -102,8 +102,8 @@ const createStudent = async (req, res) => {
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
-    if (role && !['student', 'lecturer'].includes(role)) {
-      return res.status(400).json({ message: 'Role must be student or lecturer' });
+    if (role && role !== 'student') {
+      return res.status(400).json({ message: 'Only student accounts can be created here' });
     }
 
     const existing = await User.findByEmail(email);

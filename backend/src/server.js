@@ -16,7 +16,7 @@ const documentRoutes = require('./routes/documents');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/users');
-const lecturerRoutes = require('./routes/lecturer');
+const teachingRoutes = require('./routes/teaching');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -41,7 +41,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/lecturer', lecturerRoutes);
+app.use('/api/teaching', teachingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

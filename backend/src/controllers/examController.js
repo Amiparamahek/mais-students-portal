@@ -3,7 +3,7 @@ const { notifyStudents } = require('../utils/notify');
 
 const getAll = async (req, res) => {
   try {
-    const exams = await Exam.getAll();
+    const exams = await Exam.getVisible({ id: req.user.id, role: req.user.role });
     res.json(exams);
   } catch (err) {
     console.error(err);

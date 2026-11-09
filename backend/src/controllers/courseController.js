@@ -81,9 +81,6 @@ const remove = async (req, res) => {
 // seats must be free, and any prerequisite must have a published grade.
 const enroll = async (req, res) => {
   try {
-    if (req.user.role === 'lecturer') {
-      return res.status(403).json({ message: 'Lecturers cannot enrol in courses' });
-    }
     const { courseId } = req.body;
     const studentId = req.user.role === 'admin' && req.body.studentId ? Number(req.body.studentId) : req.user.id;
 

@@ -11,11 +11,16 @@ const ensureColumns = {
   users: { avatar_url: 'TEXT', phone: 'TEXT' },
   courses: {
     created_by: 'INTEGER',
-    lecturer_id: 'INTEGER',
     seats: 'INTEGER',
     prerequisite_course_id: 'INTEGER',
   },
-  documents: { course_id: 'INTEGER' },
+  documents: {
+    course_id: 'INTEGER',
+    stored_name: 'TEXT',
+    original_name: 'TEXT',
+    mime_type: 'TEXT',
+    size_bytes: 'INTEGER',
+  },
 };
 
 const files = fs.readdirSync(migrationDir).filter((f) => f.endsWith('.sql')).sort();
@@ -37,33 +42,12 @@ async function addMissingColumns() {
   }
 }
 
-// SQLite cannot alter a CHECK constraint, so rebuild users when it does not allow 'lecturer'.
-async function ensureLecturerRole() {
-  const [row] = await all("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'");
-  if (!row || row.sql.includes("'lecturer'")) return;
-
-  console.log('Rebuilding users table to allow the lecturer role');
-  const newSql = row.sql
-    .replace(/CREATE TABLE\s+(IF NOT EXISTS\s+)?users/i, 'CREATE TABLE users_new')
-    .replace(/CHECK\s*\(role IN \([^)]*\)\)/i, "CHECK (role IN ('student', 'admin', 'lecturer'))");
-  const cols = (await all('PRAGMA table_info(users)')).map((c) => `"${c.name}"`).join(', ');
-
-  // Foreign keys must be off: dropping users with them on would cascade-delete child rows.
-  await exec('PRAGMA foreign_keys = OFF');
-  await exec('BEGIN');
-  try {
-    await exec(newSql);
-    await exec(`INSERT INTO users_new (${cols}) SELECT ${cols} FROM users`);
-    await exec('DROP TABLE users');
-    await exec('ALTER TABLE users_new RENAME TO users');
-    await exec('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
-    await exec('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)');
-    await exec('COMMIT');
-  } catch (e) {
-    await exec('ROLLBACK');
-    throw e;
-  } finally {
-    await exec('PRAGMA foreign_keys = ON');
+// The lecturer role was removed: admin does the teaching. Convert any such accounts.
+async function convertLecturersToAdmin() {
+  const [{ n }] = await all("SELECT COUNT(*) AS n FROM users WHERE role = 'lecturer'");
+  if (n > 0) {
+    await run("UPDATE users SET role = 'admin' WHERE role = 'lecturer'");
+    console.log(`Converted ${n} lecturer account(s) to admin`);
   }
 }
 
@@ -75,7 +59,7 @@ async function ensureLecturerRole() {
       await exec(fs.readFileSync(path.join(migrationDir, file), 'utf8'));
     }
     await addMissingColumns();
-    await ensureLecturerRole();
+    await convertLecturersToAdmin();
     console.log('✅ All migrations completed');
   } catch (e) {
     console.error('❌ Migration failed:', e.message);

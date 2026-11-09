@@ -1,13 +1,20 @@
 const db = require('../config/database');
 
 const Exam = {
-  getAll: () => {
+  // Admin: all exams. Student: exams for classes they are enrolled in.
+  getVisible: ({ id, role }) => {
+    const scope = role === 'admin'
+      ? ''
+      : "WHERE e.course_id IN (SELECT course_id FROM enrollments WHERE student_id = ? AND status = 'enrolled')";
+    const params = role === 'admin' ? [] : [id];
     return new Promise((resolve, reject) => {
       db.all(
         `SELECT e.*, c.code, c.name
          FROM exams e
          JOIN courses c ON e.course_id = c.id
+         ${scope}
          ORDER BY e.exam_date ASC, e.exam_time ASC`,
+        params,
         (err, rows) => {
           if (err) reject(err);
           else resolve(rows);

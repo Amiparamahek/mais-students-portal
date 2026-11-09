@@ -2,17 +2,15 @@ const db = require('../config/database');
 
 const selectCourse = (extra = '') => `
   SELECT c.*,
-    u.name AS lecturer_name,
     p.code AS prerequisite_code,
     p.name AS prerequisite_name,
     (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id AND e.status = 'enrolled') AS enrolled_count${extra}
   FROM courses c
-  LEFT JOIN users u ON u.id = c.lecturer_id
   LEFT JOIN courses p ON p.id = c.prerequisite_course_id`;
 const SELECT_COURSE = selectCourse();
 
 // Only these columns may be written from request bodies.
-const WRITABLE = ['code', 'name', 'credits', 'lecturer', 'lecturer_id', 'semester', 'description', 'seats', 'prerequisite_course_id'];
+const WRITABLE = ['code', 'name', 'credits', 'lecturer', 'semester', 'description', 'seats', 'prerequisite_course_id'];
 
 const all = (sql, params = []) =>
   new Promise((resolve, reject) => db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))));
@@ -23,8 +21,6 @@ const Course = {
   getAll: () => all(`${SELECT_COURSE} ORDER BY c.code`),
 
   getById: (id) => get(`${SELECT_COURSE} WHERE c.id = ?`, [id]),
-
-  getByLecturer: (lecturerId) => all(`${SELECT_COURSE} WHERE c.lecturer_id = ? ORDER BY c.code`, [lecturerId]),
 
   // Catalog for students: matches code or name, and says whether the student is already enrolled.
   search: (q, studentId) => {

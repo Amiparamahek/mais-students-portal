@@ -1,21 +1,27 @@
 const db = require('../config/database');
 
 const Timetable = {
-  getAll: () => {
+  // Admin: whole timetable. Student: only classes they are enrolled in.
+  getVisible: ({ id, role }) => {
+    let where = '';
+    const params = [];
+    if (role !== 'admin') {
+      where = "WHERE t.course_id IN (SELECT course_id FROM enrollments WHERE student_id = ? AND status = 'enrolled')";
+      params.push(id);
+    }
     return new Promise((resolve, reject) => {
       db.all(
-        `SELECT t.*, c.code as course_code, c.name as course_name, c.lecturer
+        `SELECT t.*, c.code as course_code, c.name as course_name, c.lecturer, c.id AS course_id
          FROM timetable t
          JOIN courses c ON t.course_id = c.id
-         ORDER BY 
+         ${where}
+         ORDER BY
            CASE t.day
              WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3
              WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7
            END, t.time`,
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
+        params,
+        (err, rows) => (err ? reject(err) : resolve(rows))
       );
     });
   },
@@ -35,8 +41,10 @@ const Timetable = {
 
   update: (id, fields) => {
     // Normalize snake_case keys to DB column names (already snake_case)
-    const keys = Object.keys(fields);
-    const values = Object.values(fields);
+    const WRITABLE = ['course_id', 'day', 'time', 'room', 'week'];
+    const keys = Object.keys(fields).filter((k) => WRITABLE.includes(k));
+    if (keys.length === 0) return Promise.resolve({ changes: 0 });
+    const values = keys.map((k) => fields[k]);
     const setClause = keys.map((key) => `${key} = ?`).join(', ');
     return new Promise((resolve, reject) => {
       db.run(

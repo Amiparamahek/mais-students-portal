@@ -1,8 +1,18 @@
 const Attendance = require('../models/Attendance');
 const Enrollment = require('../models/Enrollment');
-const { canManageCourse } = require('../utils/access');
+const { toISODate } = require('../utils/dates');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Per-date record of the student's own classes.
+const getMyLog = async (req, res) => {
+  try {
+    res.json(await Attendance.getStudentLog(req.user.id));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 const getMyAttendance = async (req, res) => {
   try {
@@ -20,17 +30,9 @@ const createOrUpdate = async (req, res) => {
     if (!Array.isArray(req.body.records)) {
       return res.status(400).json({ message: 'records array is required' });
     }
-    const today = new Date().toISOString().slice(0, 10);
-    const classDate = req.body.date || today;
+    const classDate = req.body.date || toISODate();
     if (!DATE_RE.test(classDate)) {
       return res.status(400).json({ message: 'Date must be YYYY-MM-DD' });
-    }
-
-    const courseIds = [...new Set(req.body.records.map((r) => Number(r.course_id ?? r.courseId)))];
-    for (const courseId of courseIds) {
-      if (!(await canManageCourse(req.user, courseId))) {
-        return res.status(403).json({ message: 'You can only record attendance for your own classes' });
-      }
     }
 
     for (const r of req.body.records) {
@@ -54,4 +56,4 @@ const createOrUpdate = async (req, res) => {
   }
 };
 
-module.exports = { getMyAttendance, createOrUpdate };
+module.exports = { getMyAttendance, getMyLog, createOrUpdate };

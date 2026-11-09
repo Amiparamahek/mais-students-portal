@@ -25,12 +25,4 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
-// Admins and lecturers. Lecturers are further limited to their own courses by the controller.
-const staffOnly = (req, res, next) => {
-  if (req.user.role !== 'admin' && req.user.role !== 'lecturer') {
-    return res.status(403).json({ message: 'Staff access required' });
-  }
-  next();
-};
-
-module.exports = { auth, adminOnly, staffOnly };
+module.exports = { auth, adminOnly };

@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { auth, staffOnly } = require('../middleware/auth');
-const { getMyAttendance, createOrUpdate } = require('../controllers/attendanceController');
+const { auth, adminOnly } = require('../middleware/auth');
+const { getMyAttendance, getMyLog, createOrUpdate } = require('../controllers/attendanceController');
 
 router.get('/my-attendance', auth, getMyAttendance);
-router.post('/', auth, staffOnly, createOrUpdate);
+router.get('/my-log', auth, getMyLog);
+router.post('/', auth, adminOnly, createOrUpdate);
 
 module.exports = router;
