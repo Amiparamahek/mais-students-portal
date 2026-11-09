@@ -72,8 +72,11 @@ const remove = async (req, res) => {
 
 const enroll = async (req, res) => {
   try {
-    const studentId = req.user.id;
     const { courseId } = req.body;
+    // Admin can enroll any student; students enroll themselves
+    const studentId = req.user.role === 'admin' && req.body.studentId
+      ? req.body.studentId
+      : req.user.id;
 
     const isEnrolled = await Enrollment.isEnrolled(studentId, courseId);
     if (isEnrolled) {
