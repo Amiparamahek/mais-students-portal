@@ -1,3 +1,4 @@
+const db = require('../config/database');
 const User = require('../models/User');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
 
@@ -31,6 +32,15 @@ const register = async (req, res) => {
   }
 };
 
+// Best effort: a failure to write the log must never block signing in.
+const recordLogin = (req, userId, success) => {
+  db.run(
+    'INSERT INTO login_log (user_id, success, ip, user_agent) VALUES (?, ?, ?, ?)',
+    [userId, success ? 1 : 0, req.ip, (req.headers['user-agent'] || '').slice(0, 200)],
+    (err) => err && console.error('login log failed:', err.message)
+  );
+};
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -46,9 +56,16 @@ const login = async (req, res) => {
 
     const isMatch = await comparePassword(password, user.password_hash);
     if (!isMatch) {
+      recordLogin(req, user.id, false);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    if (user.is_active === 0) {
+      recordLogin(req, user.id, false);
+      return res.status(403).json({ message: 'This account is deactivated. Contact an administrator.' });
+    }
+
+    recordLogin(req, user.id, true);
     const token = generateToken(user);
 
     res.json({

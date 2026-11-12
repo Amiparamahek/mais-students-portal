@@ -6,12 +6,15 @@ const adminController = require('../controllers/adminController');
 const courseController = require('../controllers/courseController');
 const timetableController = require('../controllers/timetableController');
 const attendanceController = require('../controllers/attendanceController');
+const analyticsController = require('../controllers/analyticsController');
 
 // Dashboard stats
 router.get('/dashboard-stats', auth, adminOnly, adminController.getDashboardStats);
+router.get('/analysis', auth, adminOnly, analyticsController.getOverview);
 
 // Student management
 router.get('/students', auth, adminOnly, adminController.getStudents);
+router.get('/students/:id/profile', auth, adminOnly, analyticsController.getStudentProfile);
 router.get('/students/:id', auth, adminOnly, adminController.getStudent);
 router.post('/students', auth, adminOnly, adminController.createStudent);
 router.put('/students/:id', auth, adminOnly, adminController.updateStudent);
