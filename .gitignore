@@ -36,3 +36,6 @@ desktop.ini
 # Misc
 npm-debug.log
 coverage/
+
+# Local-only front-end overrides
+.env*.local

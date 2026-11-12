@@ -3,7 +3,7 @@ const db = require('../config/database');
 const User = {
   findByEmail: (email) => {
     return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+      db.get('SELECT * FROM users WHERE email = ? COLLATE NOCASE', [email], (err, row) => {
         if (err) reject(err);
         else resolve(row);
       });

@@ -48,8 +48,8 @@ Create `backend/.env` before first run:
 
 ```env
 PORT=5001
-JWT_SECRET=mais_student_portal_secret_key_2026
-JWT_EXPIRES_IN=7d
+JWT_SECRET=<random 64-character hex string; see backend/.env.example>
+JWT_EXPIRES_IN=8h
 DB_PATH=./database.sqlite
 ```
 

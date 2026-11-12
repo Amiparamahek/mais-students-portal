@@ -5,6 +5,7 @@ const { notifyStudents } = require('../utils/notify');
 const Enrollment = require('../models/Enrollment');
 const Attendance = require('../models/Attendance');
 const { hashPassword } = require('../utils/auth');
+const { validateEmail, validateName, validatePassword, generateTempPassword } = require('../utils/validate');
 
 const getAccounts = async (req, res) => {
   try {
@@ -87,7 +88,7 @@ const resetStudentPassword = async (req, res) => {
     if (user.role === 'admin') {
       return res.status(400).json({ message: 'Admin passwords cannot be reset here' });
     }
-    const temporaryPassword = require('crypto').randomBytes(6).toString('base64url');
+    const temporaryPassword = generateTempPassword();
     await User.updatePassword(user.id, await hashPassword(temporaryPassword));
     res.json({ temporaryPassword, message: 'Password reset' });
   } catch (err) {
@@ -107,10 +108,11 @@ const nextStudentId = async (year = new Date().getFullYear()) => {
 const createStudent = async (req, res) => {
   try {
     const { name, email, password, role, faculty, programme, academic_year } = req.body;
-    const student_id = req.body.student_id?.trim() || (await nextStudentId());
-    if (!name || !email) {
-      return res.status(400).json({ message: 'Name and email are required' });
+    const problem = validateName(name) || validateEmail(email) || (password ? validatePassword(password) : null);
+    if (problem) {
+      return res.status(400).json({ message: problem });
     }
+    const student_id = req.body.student_id?.trim() || (await nextStudentId());
     if (role && role !== 'student') {
       return res.status(400).json({ message: 'Only student accounts can be created here' });
     }
@@ -120,7 +122,9 @@ const createStudent = async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    const passwordHash = await hashPassword(password || 'demo123');
+    // No password given: make a one-time temporary one and show it to the admin once.
+    const temporaryPassword = password ? null : generateTempPassword();
+    const passwordHash = await hashPassword(password || temporaryPassword);
     const result = await User.create({
       name,
       email,
@@ -132,7 +136,7 @@ const createStudent = async (req, res) => {
       academicYear: academic_year,
     });
 
-    res.status(201).json({ id: result.id, student_id, message: 'Student created' });
+    res.status(201).json({ id: result.id, student_id, temporaryPassword, message: 'Student created' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -143,14 +147,20 @@ const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, student_id, faculty, programme, academic_year, role } = req.body;
+    const problem =
+      (name !== undefined ? validateName(name) : null) ||
+      (email !== undefined ? validateEmail(email) : null) ||
+      (role !== undefined && role !== 'student' ? 'Only student accounts can be edited here' : null);
+    if (problem) {
+      return res.status(400).json({ message: problem });
+    }
     const fields = {};
-    if (name !== undefined) fields.name = name;
-    if (email !== undefined) fields.email = email;
+    if (name !== undefined) fields.name = name.trim();
+    if (email !== undefined) fields.email = email.trim();
     if (student_id !== undefined) fields.student_id = student_id;
     if (faculty !== undefined) fields.faculty = faculty;
     if (programme !== undefined) fields.programme = programme;
     if (academic_year !== undefined) fields.academic_year = academic_year;
-    if (role !== undefined) fields.role = role;
     if (Object.keys(fields).length === 0) {
       return res.status(400).json({ message: 'No fields to update' });
     }

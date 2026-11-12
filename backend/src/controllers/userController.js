@@ -1,15 +1,21 @@
 const User = require('../models/User');
+const { validateEmail, validateName } = require('../utils/validate');
 
 const updateProfile = async (req, res) => {
   try {
     const { name, email } = req.body;
     const userId = req.user.id;
 
-    if (!name || !email) {
-      return res.status(400).json({ message: 'Name and email are required' });
+    const problem = validateName(name) || validateEmail(email);
+    if (problem) {
+      return res.status(400).json({ message: problem });
+    }
+    const taken = await User.findByEmail(email.trim());
+    if (taken && taken.id !== userId) {
+      return res.status(409).json({ message: 'That email is already used by another account' });
     }
 
-    await User.updateProfile(userId, { name, email });
+    await User.updateProfile(userId, { name: name.trim(), email: email.trim() });
     const user = await User.findById(userId);
 
     res.json({

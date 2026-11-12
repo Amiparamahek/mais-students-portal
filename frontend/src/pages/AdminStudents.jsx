@@ -12,7 +12,7 @@ export default function AdminStudents() {
   const [form, setForm] = useState({
     name: '',
     email: '',
-    password: 'demo123',
+    password: '',
     student_id: '',
     faculty: '',
     programme: '',
@@ -49,13 +49,16 @@ export default function AdminStudents() {
       if (editingId) {
         await api.put(`/admin/students/${editingId}`, form);
       } else {
-        await api.post('/admin/students', form);
+        const res = await api.post('/admin/students', form);
+        if (res.data.temporaryPassword) {
+          alert(`Account created. Temporary password for ${form.email}:\n\n${res.data.temporaryPassword}\n\nShow it once; the student should change it on their Profile page.`);
+        }
       }
       setShowForm(false);
       setForm({
         name: '',
         email: '',
-        password: 'demo123',
+        password: '',
         student_id: '',
         faculty: '',
         programme: '',
@@ -129,7 +132,7 @@ export default function AdminStudents() {
               setForm({
                 name: '',
                 email: '',
-                password: 'demo123',
+                password: '',
                 student_id: '',
                 faculty: '',
                 programme: '',
@@ -206,6 +209,7 @@ export default function AdminStudents() {
               <input
                 type="password"
                 value={form.password}
+                placeholder="Leave empty to generate a temporary password"
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "
               />

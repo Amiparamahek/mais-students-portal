@@ -69,11 +69,13 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-          <div className="mt-6 space-y-1 border-t pt-6 text-center text-sm text-muted-foreground">
-            <p>Demo accounts</p>
-            <p className="font-medium text-foreground">Admin: admin@tuke.sk / admin123</p>
-            <p className="font-medium text-foreground">Student: student@tuke.sk / demo123</p>
-          </div>
+          {import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === 'true' && (
+            <div className="mt-6 space-y-1 border-t pt-6 text-center text-sm text-muted-foreground">
+              <p>Demo accounts (local development only)</p>
+              <p className="font-medium text-foreground">Admin: admin@tuke.sk / admin123</p>
+              <p className="font-medium text-foreground">Student: student@tuke.sk / demo123</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

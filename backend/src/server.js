@@ -1,9 +1,20 @@
 require('dotenv').config();
+
+// Stop early with a clear message if the configuration is unsafe (e.g. a published secret).
+const { loadConfig } = require('./utils/config');
+let config;
+try {
+  config = loadConfig();
+} catch (err) {
+  console.error(err.message);
+  process.exit(1);
+}
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 
 const db = require('./config/database');
+const { applySecurity, limits } = require('./middleware/security');
+const auditAdminWrites = require('./middleware/audit');
 
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
@@ -20,8 +31,15 @@ const teachingRoutes = require('./routes/teaching');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
-app.use(express.json());
+applySecurity(app, config);
+app.use(express.json({ limit: '100kb' }));
+
+// Rate limits. Specific routes first, then everything under /api.
+app.use('/api/auth/login', limits.login);
+app.use('/api/auth/register', limits.register);
+app.use('/api/attendance/check-in', limits.checkIn);
+app.use('/api', limits.api);
+app.use(auditAdminWrites);
 
 // Health check
 app.get('/api/health', (req, res) => {

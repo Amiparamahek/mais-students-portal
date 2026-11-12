@@ -1,23 +1,56 @@
 const db = require('../config/database');
 const User = require('../models/User');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
+const bcrypt = require('bcryptjs');
+const { validateEmail, validateName, validatePassword } = require('../utils/validate');
+
+// Comparing against this when the email is unknown keeps the response time the same, so
+// the timing does not reveal which emails have accounts.
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10);
+
+const LOCK_AFTER_FAILURES = 5;
+const LOCK_MINUTES = 15;
+
+// Failed sign-ins since the last successful one, within the lock window.
+const recentFailures = (userId) =>
+  new Promise((resolve, reject) =>
+    db.get(
+      `SELECT COUNT(*) AS n FROM login_log
+       WHERE user_id = ? AND success = 0
+         AND logged_in_at >= datetime('now', ?)
+         AND id > COALESCE((SELECT MAX(id) FROM login_log WHERE user_id = ? AND success = 1), 0)`,
+      [userId, `-${LOCK_MINUTES} minutes`, userId],
+      (err, row) => (err ? reject(err) : resolve(row.n))
+    )
+  );
+
+const tooLong = (value, label) =>
+  value !== undefined && value !== null && String(value).length > 100 ? `${label} must be 100 characters or fewer` : null;
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, studentId, faculty, programme, academicYear } = req.body;
+    const { name, email, password, studentId, faculty, programme, academicYear } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Name, email, and password are required' });
+    const problem =
+      validateName(name) ||
+      validateEmail(email) ||
+      validatePassword(password) ||
+      tooLong(studentId, 'Student ID') ||
+      tooLong(faculty, 'Faculty') ||
+      tooLong(programme, 'Programme') ||
+      tooLong(academicYear, 'Academic year');
+    if (problem) {
+      return res.status(400).json({ message: problem });
     }
 
-    const existingUser = await User.findByEmail(email);
+    const existingUser = await User.findByEmail(email.trim());
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     // Self-registration always creates a student. Admins and lecturers are created by an admin.
     const passwordHash = await hashPassword(password);
-    const result = await User.create({ name, email, passwordHash, role: 'student', studentId, faculty, programme, academicYear });
+    const result = await User.create({ name: name.trim(), email: email.trim(), passwordHash, role: 'student', studentId, faculty, programme, academicYear });
 
     const user = await User.findById(result.id);
     const token = generateToken(user);
@@ -49,12 +82,19 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const user = await User.findByEmail(email);
+    const user = await User.findByEmail(String(email).trim());
     if (!user) {
+      await comparePassword(String(password), DUMMY_HASH);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const isMatch = await comparePassword(password, user.password_hash);
+    // Locked after repeated failures. Attempts while locked are not logged, so the lock
+    // ends LOCK_MINUTES after the last real failure and cannot be extended by an attacker.
+    if ((await recentFailures(user.id)) >= LOCK_AFTER_FAILURES) {
+      return res.status(429).json({ message: `Too many failed attempts. Try again in ${LOCK_MINUTES} minutes.` });
+    }
+
+    const isMatch = await comparePassword(String(password), user.password_hash);
     if (!isMatch) {
       recordLogin(req, user.id, false);
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -98,8 +138,9 @@ const changePassword = async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ message: 'Current and new password are required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    const weak = validatePassword(newPassword);
+    if (weak) {
+      return res.status(400).json({ message: weak });
     }
 
     const user = await User.findByIdWithPassword(req.user.id);
