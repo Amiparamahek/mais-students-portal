@@ -156,7 +156,7 @@ export default function PortalLayout({ brand, menu, children, notificationsPath 
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-8">{children}</main>
+        <main key={location.pathname} className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-8 fx-fade-up">{children}</main>
       </div>
     </div>
   );

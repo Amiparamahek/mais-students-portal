@@ -57,7 +57,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md fx-fade-up">
         <CardHeader className="items-center text-center">
           <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Book className="size-6" />

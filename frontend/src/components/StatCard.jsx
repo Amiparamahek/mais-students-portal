@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function StatCard({ title, value, icon: Icon }) {
   return (
-    <Card className="gap-3 py-5">
+    <Card className="gap-3 py-5 fx-fade-up fx-lift">
       <CardContent className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{title}</p>
