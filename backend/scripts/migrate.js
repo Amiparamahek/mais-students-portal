@@ -9,6 +9,8 @@ const dbPath = path.join(__dirname, '../database.sqlite');
 // to a database that was created earlier, so add any that are missing.
 const ensureColumns = {
   users: { avatar_url: 'TEXT', phone: 'TEXT' },
+  timetable: { building: 'TEXT' },
+  exams: { exam_end_time: 'TEXT' },
   courses: {
     created_by: 'INTEGER',
     seats: 'INTEGER',

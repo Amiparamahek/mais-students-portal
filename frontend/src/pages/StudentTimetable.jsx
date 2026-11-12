@@ -47,7 +47,7 @@ export default function StudentTimetable() {
               {byDay[day].map((s) => (
                 <div key={s.id} className="rounded-lg border bg-muted/40 p-3">
                   <p className="text-sm font-medium">{s.course_code} - {s.course_name}</p>
-                  <p className="text-xs text-muted-foreground">{s.time} · Room {s.room || '-'} · {s.lecturer || 'Lecturer not set'}</p>
+                  <p className="text-xs text-muted-foreground">{s.time} · {[s.building && `Building ${s.building}`, `Room ${s.room || '-'}`].filter(Boolean).join(', ')} · {s.lecturer || 'Lecturer not set'}</p>
                 </div>
               ))}
             </CardContent>

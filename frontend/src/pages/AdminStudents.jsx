@@ -192,6 +192,7 @@ export default function AdminStudents() {
               </label>
               <input
                 type="text"
+                placeholder="Auto (e.g. MAIS-2026-0146)"
                 value={form.student_id}
                 onChange={(e) => setForm({ ...form, student_id: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-md focus:outline-none "

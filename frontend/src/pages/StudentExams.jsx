@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
+import { examTimeRange } from '../lib/date';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
@@ -37,7 +38,7 @@ export default function StudentExams() {
                 <TableCell className="pl-6 font-medium">{x.exam_name}</TableCell>
                 <TableCell>{x.code} - {x.name}</TableCell>
                 <TableCell>{x.exam_date}</TableCell>
-                <TableCell>{x.exam_time || '-'}</TableCell>
+                <TableCell>{examTimeRange(x.exam_time, x.exam_end_time)}</TableCell>
                 <TableCell className="pr-6">{x.room || '-'}</TableCell>
               </TableRow>
             ))}

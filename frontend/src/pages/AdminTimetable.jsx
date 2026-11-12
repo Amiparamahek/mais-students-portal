@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const empty = { course_id: '', day: 'Monday', start: '09:00', end: '10:30', room: '' };
+const empty = { course_id: '', day: 'Monday', start: '09:00', end: '10:30', building: '', room: '' };
 
 export default function AdminTimetable() {
   const [slots, setSlots] = useState([]);
@@ -19,6 +19,7 @@ export default function AdminTimetable() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [clashes, setClashes] = useState([]);
 
   const load = async () => {
     const [t, c] = await Promise.all([api.get('/admin/timetable'), api.get('/admin/courses')]);
@@ -29,10 +30,33 @@ export default function AdminTimetable() {
     load().catch((e) => setError(e.response?.data?.message || 'Failed to load timetable'));
   }, []);
 
+  // Live check while the admin picks a day, time and room: lists classes already in that window.
+  useEffect(() => {
+    if (!form.day || !form.start || !form.end || form.end <= form.start) {
+      setClashes([]);
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      api
+        .get('/admin/timetable/conflicts', {
+          params: {
+            day: form.day,
+            time: joinSlot(form.start, form.end),
+            building: form.building,
+            room: form.room,
+            excludeId: editingId || undefined,
+          },
+        })
+        .then((r) => setClashes(r.data || []))
+        .catch(() => setClashes([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [form.day, form.start, form.end, form.building, form.room, editingId]);
+
   const startEdit = (s) => {
     const { start, end } = splitSlot(s.time);
     setEditingId(s.id);
-    setForm({ course_id: s.course_id, day: s.day, start, end, room: s.room || '' });
+    setForm({ course_id: s.course_id, day: s.day, start, end, building: s.building || '', room: s.room || '' });
   };
 
   const submit = async (e) => {
@@ -40,7 +64,7 @@ export default function AdminTimetable() {
     setError('');
     if (form.end <= form.start) return setError('End time must be after start time');
     setSaving(true);
-    const body = { course_id: Number(form.course_id), day: form.day, time: joinSlot(form.start, form.end), room: form.room };
+    const body = { course_id: Number(form.course_id), day: form.day, time: joinSlot(form.start, form.end), building: form.building, room: form.room };
     try {
       if (editingId) await api.put(`/admin/timetable/${editingId}`, body);
       else await api.post('/admin/timetable', body);
@@ -101,9 +125,26 @@ export default function AdminTimetable() {
               <Input type="time" required value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Room</Label>
-              <Input placeholder="A1" value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} />
+              <Label>Building</Label>
+              <Input placeholder="2" value={form.building} onChange={(e) => setForm({ ...form, building: e.target.value })} />
             </div>
+            <div className="space-y-2">
+              <Label>Room</Label>
+              <Input placeholder="204" value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} />
+            </div>
+            {clashes.length > 0 && (
+              <div className="rounded-md border px-3 py-2 text-sm md:col-span-6">
+                <p className="mb-2 font-medium">Classes already in this time ({clashes.length})</p>
+                <ul className="space-y-1">
+                  {clashes.map((c) => (
+                    <li key={c.id} className={c.same_room ? 'text-destructive' : 'text-muted-foreground'}>
+                      {c.course_code} - {c.course_name} · {c.day} {c.time} · {[c.building && `Building ${c.building}`, c.room && `Room ${c.room}`].filter(Boolean).join(', ') || 'No room set'}
+                      {c.same_room && ' (same room, cannot save)'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="flex gap-3 md:col-span-6">
               <Button type="submit" disabled={saving}>{editingId ? 'Save slot' : 'Add slot'}</Button>
               {editingId && <Button type="button" variant="outline" onClick={() => { setEditingId(null); setForm(empty); }}>Cancel</Button>}
@@ -119,17 +160,19 @@ export default function AdminTimetable() {
               <TableHead className="pl-6">Class</TableHead>
               <TableHead>Day</TableHead>
               <TableHead>Time</TableHead>
+              <TableHead>Building</TableHead>
               <TableHead>Room</TableHead>
               <TableHead className="pr-6 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {slots.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No timetable slots yet.</TableCell></TableRow>}
+            {slots.length === 0 && <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No timetable slots yet.</TableCell></TableRow>}
             {slots.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="pl-6 font-medium">{s.course_code} - {s.course_name}</TableCell>
                 <TableCell>{s.day}</TableCell>
                 <TableCell>{s.time}</TableCell>
+                <TableCell>{s.building || '-'}</TableCell>
                 <TableCell>{s.room || '-'}</TableCell>
                 <TableCell className="pr-6 text-right">
                   <Button variant="ghost" size="icon-sm" aria-label="Edit slot" onClick={() => startEdit(s)}><Pencil /></Button>

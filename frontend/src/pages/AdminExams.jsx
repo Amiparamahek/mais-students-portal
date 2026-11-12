@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import useLiveFetch from '../hooks/useLiveFetch';
 import { Trash2 } from 'lucide-react';
 import api from '../services/api';
+import { examTimeRange } from '../lib/date';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-const empty = { courseId: '', examName: '', examDate: '', examTime: '', room: '' };
+const empty = { courseId: '', examName: '', examDate: '', examTime: '', examEndTime: '', room: '' };
 
 export default function AdminExams() {
   const [exams, setExams] = useState([]);
@@ -90,6 +91,10 @@ export default function AdminExams() {
               <Label>Time</Label>
               <Input type="time" value={form.examTime} onChange={set('examTime')} />
             </div>
+            <div className="space-y-2">
+              <Label>End time</Label>
+              <Input type="time" value={form.examEndTime} onChange={set('examEndTime')} />
+            </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Room</Label>
               <Input placeholder="B2" value={form.room} onChange={set('room')} />
@@ -122,7 +127,7 @@ export default function AdminExams() {
                 <TableCell className="pl-6 font-medium">{x.exam_name}</TableCell>
                 <TableCell>{x.code}</TableCell>
                 <TableCell>{x.exam_date}</TableCell>
-                <TableCell>{x.exam_time || '-'}</TableCell>
+                <TableCell>{examTimeRange(x.exam_time, x.exam_end_time)}</TableCell>
                 <TableCell>{x.room || '-'}</TableCell>
                 <TableCell className="pr-6 text-right">
                   <Button variant="ghost" size="icon-sm" aria-label="Delete exam" onClick={() => remove(x.id)}>

@@ -29,6 +29,16 @@ const User = {
     });
   },
 
+  // Student IDs already used with this prefix, e.g. 'MAIS-2026-%'.
+  findStudentIdsLike: (pattern) => {
+    return new Promise((resolve, reject) => {
+      db.all('SELECT student_id FROM users WHERE student_id LIKE ?', [pattern], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows.map((r) => r.student_id));
+      });
+    });
+  },
+
   create: ({ name, email, passwordHash, role = 'student', studentId, faculty, programme, academicYear }) => {
     return new Promise((resolve, reject) => {
       db.run(

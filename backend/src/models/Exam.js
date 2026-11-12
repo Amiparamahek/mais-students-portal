@@ -32,11 +32,11 @@ const Exam = {
     });
   },
 
-  create: ({ courseId, examName, examDate, examTime, room }) => {
+  create: ({ courseId, examName, examDate, examTime, examEndTime, room }) => {
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO exams (course_id, exam_name, exam_date, exam_time, room) VALUES (?, ?, ?, ?, ?)`,
-        [courseId, examName, examDate, examTime, room],
+        `INSERT INTO exams (course_id, exam_name, exam_date, exam_time, exam_end_time, room) VALUES (?, ?, ?, ?, ?, ?)`,
+        [courseId, examName, examDate, examTime, examEndTime, room],
         function (err) {
           if (err) reject(err);
           else resolve({ id: this.lastID });

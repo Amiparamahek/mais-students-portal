@@ -35,6 +35,7 @@ router.get('/attendance/report', auth, adminOnly, adminController.getAttendanceR
 router.get('/timetable', auth, adminOnly, timetableController.getAll);
 router.post('/timetable', auth, adminOnly, timetableController.create);
 router.put('/timetable/:id', auth, adminOnly, timetableController.update);
+router.get('/timetable/conflicts', auth, adminOnly, timetableController.conflicts);
 router.delete('/timetable/:id', auth, adminOnly, timetableController.remove);
 
 // Announcements

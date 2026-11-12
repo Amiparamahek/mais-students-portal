@@ -11,6 +11,8 @@ export default function StudentFindCourses() {
   const [courses, setCourses] = useState([]);
   const [busy, setBusy] = useState(null);
   const [message, setMessage] = useState(null);
+  const [options, setOptions] = useState([]);
+  const [pick, setPick] = useState('');
 
   const load = (term) =>
     api
@@ -18,8 +20,16 @@ export default function StudentFindCourses() {
       .then((r) => setCourses(r.data || []))
       .catch((e) => setMessage({ ok: false, text: e.response?.data?.message || 'Search failed' }));
 
+  // Full course list for the drop-down (the search box below filters the table only).
+  const loadOptions = () =>
+    api
+      .get('/courses/search', { params: { q: '' } })
+      .then((r) => setOptions(r.data || []))
+      .catch(() => {});
+
   useEffect(() => {
     load('');
+    loadOptions();
   }, []);
 
   // Search as the student types.
@@ -34,11 +44,13 @@ export default function StudentFindCourses() {
     try {
       await api.post('/courses/enroll', { courseId: c.id });
       setMessage({ ok: true, text: `Registered for ${c.code}.` });
+      setPick('');
     } catch (err) {
       setMessage({ ok: false, text: err.response?.data?.message || 'Registration failed' });
     } finally {
       setBusy(null);
       load(q);
+      loadOptions();
     }
   };
 
@@ -54,6 +66,7 @@ export default function StudentFindCourses() {
     } finally {
       setBusy(null);
       load(q);
+      loadOptions();
     }
   };
 
@@ -64,6 +77,27 @@ export default function StudentFindCourses() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Find courses</h2>
         <p className="text-muted-foreground">Search by course code or name, then register if seats are free and prerequisites are met.</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+          className="h-9 min-w-72 rounded-md border bg-background px-3 text-sm"
+        >
+          <option value="">Choose a course to register</option>
+          {options.map((c) => {
+            const full = c.seats != null && c.enrolled_count >= c.seats;
+            return (
+              <option key={c.id} value={c.id} disabled={!!c.is_enrolled || full}>
+                {c.code} - {c.name}{c.is_enrolled ? ' (registered)' : full ? ' (full)' : ''}
+              </option>
+            );
+          })}
+        </select>
+        <Button disabled={!pick || busy !== null} onClick={() => enrol(options.find((c) => String(c.id) === pick))}>
+          Register selected
+        </Button>
       </div>
 
       <Input placeholder="e.g. CT101 or Database" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-md" />

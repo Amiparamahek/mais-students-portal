@@ -15,5 +15,8 @@ export const splitSlot = (slot = '') => {
   return { start, end };
 };
 
+// Exam time as "09:00 - 11:00" (or just the start when there is no end time).
+export const examTimeRange = (start, end) => (start ? (end ? `${start} - ${end}` : start) : '-');
+
 // Sort key for "HH:MM-HH:MM" slots.
 export const slotStart = (slot = '') => slot.split('-')[0] || '';

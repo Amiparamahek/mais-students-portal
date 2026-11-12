@@ -96,9 +96,18 @@ const resetStudentPassword = async (req, res) => {
   }
 };
 
+// Next free ID for the year: MAIS-2026-0146 after MAIS-2026-0145. Starts again at 0001 each year.
+const nextStudentId = async (year = new Date().getFullYear()) => {
+  const prefix = `MAIS-${year}-`;
+  const used = await User.findStudentIdsLike(`${prefix}%`);
+  const highest = used.reduce((max, id) => Math.max(max, parseInt(id.slice(prefix.length), 10) || 0), 0);
+  return `${prefix}${String(highest + 1).padStart(4, '0')}`;
+};
+
 const createStudent = async (req, res) => {
   try {
-    const { name, email, password, role, student_id, faculty, programme, academic_year } = req.body;
+    const { name, email, password, role, faculty, programme, academic_year } = req.body;
+    const student_id = req.body.student_id?.trim() || (await nextStudentId());
     if (!name || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
@@ -123,7 +132,7 @@ const createStudent = async (req, res) => {
       academicYear: academic_year,
     });
 
-    res.status(201).json({ id: result.id, message: 'Student created' });
+    res.status(201).json({ id: result.id, student_id, message: 'Student created' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
