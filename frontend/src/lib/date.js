@@ -20,3 +20,20 @@ export const examTimeRange = (start, end) => (start ? (end ? `${start} - ${end}`
 
 // Sort key for "HH:MM-HH:MM" slots.
 export const slotStart = (slot = '') => slot.split('-')[0] || '';
+
+// The database stores UTC timestamps like "2026-11-12 18:50:21". Show them in the viewer's time.
+export const fromDb = (ts) => (ts ? new Date(ts.replace(' ', 'T') + 'Z') : null);
+export const formatDateTime = (ts) => {
+  const d = fromDb(ts);
+  return d ? d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Never';
+};
+export const timeAgo = (ts) => {
+  const d = fromDb(ts);
+  if (!d) return 'Never';
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  if (min < 1) return 'Just now';
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr} h ago`;
+  return `${Math.round(hr / 24)} d ago`;
+};

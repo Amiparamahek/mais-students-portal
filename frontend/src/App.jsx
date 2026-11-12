@@ -15,6 +15,8 @@ import StudentLayout from './components/StudentLayout';
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminStudents = lazy(() => import('./pages/AdminStudents'));
+const AdminStudentDetail = lazy(() => import('./pages/AdminStudentDetail'));
+const AdminAnalysis = lazy(() => import('./pages/AdminAnalysis'));
 const AdminCourses = lazy(() => import('./pages/AdminCourses'));
 const AdminAttendance = lazy(() => import('./pages/AdminAttendance'));
 const AdminTimetable = lazy(() => import('./pages/AdminTimetable'));
@@ -67,6 +69,8 @@ function App() {
                   <Route index element={<AdminDashboard />} />
                   <Route path="dashboard" element={<AdminDashboard />} />
                   <Route path="students" element={<AdminStudents />} />
+                  <Route path="students/:id" element={<AdminStudentDetail />} />
+                  <Route path="analysis" element={<AdminAnalysis />} />
                   <Route path="courses" element={<AdminCourses />} />
                   <Route path="attendance" element={<AdminAttendance />} />
                   <Route path="timetable" element={<AdminTimetable />} />

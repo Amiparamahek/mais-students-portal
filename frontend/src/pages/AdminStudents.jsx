@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useLiveFetch from '../hooks/useLiveFetch';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 
@@ -289,7 +290,7 @@ export default function AdminStudents() {
               filteredStudents.map((s) => (
                 <tr key={s.id} className="hover:bg-muted">
                   <td className="px-6 py-4 text-foreground font-medium">
-                    {s.name}
+                    <Link to={`/admin/students/${s.id}`} className="underline decoration-muted-foreground/50 underline-offset-4 hover:decoration-foreground">{s.name}</Link>
                   </td>
                   <td className="px-6 py-4 text-muted-foreground">{s.email}</td>
                   <td className="px-6 py-4 text-muted-foreground text-sm">{s.student_id || '-'}</td>
