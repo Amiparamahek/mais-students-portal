@@ -16,7 +16,8 @@ const getToday = async (req, res) => {
 
 const postCheckIn = async (req, res) => {
   try {
-    const result = await checkIn(req.user.id, Number(req.body.timetableId));
+    const deviceId = (req.headers['x-device-id'] || '').toString().slice(0, 64) || null;
+    const result = await checkIn(req.user.id, Number(req.body.timetableId), new Date(), { deviceId, ip: req.ip });
     res.status(result.already ? 200 : 201).json({
       ...result,
       message: result.already ? 'Already recorded for today' : `Checked in to ${result.course_code}`,

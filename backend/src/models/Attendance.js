@@ -19,7 +19,7 @@ const Attendance = {
   // Record a student's attendance for one class date. Saving the same date again changes
   // the result instead of counting the class twice. Writes run one at a time so that
   // concurrent requests (live refresh, auto-absence, check-in) cannot double-insert.
-  recordClass: ({ studentId, courseId, classDate, present, recordedBy }) =>
+  recordClass: ({ studentId, courseId, classDate, present, recordedBy, evidence }) =>
     withWriteLock(async () => {
       const flag = present ? 1 : 0;
       const prev = await get(
@@ -28,8 +28,11 @@ const Attendance = {
       );
       if (!prev) {
         const ins = await run(
-          'INSERT OR IGNORE INTO attendance_log (student_id, course_id, class_date, present, recorded_by) VALUES (?, ?, ?, ?, ?)',
-          [studentId, courseId, classDate, flag, recordedBy]
+          `INSERT OR IGNORE INTO attendance_log
+             (student_id, course_id, class_date, present, recorded_by, device_id, check_in_ip, recorded_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [studentId, courseId, classDate, flag, recordedBy, evidence?.deviceId || null, evidence?.ip || null,
+           new Date().toISOString()]
         );
         if (ins.changes === 0) return; // already recorded
         await run(

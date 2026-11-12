@@ -5,6 +5,7 @@
 // student without a record for that date is recorded as absent, once.
 const db = require('../config/database');
 const Attendance = require('../models/Attendance');
+const Detect = require('./detect');
 const { toISODate, weekdayOf, slotMinutes } = require('./dates');
 
 const CHECKIN_BEFORE_MIN = 15;
@@ -147,7 +148,7 @@ class CheckInError extends Error {
 }
 
 // A student checks in to a lecture that is open now, for their own enrolled class.
-async function checkIn(studentId, timetableId, now = new Date()) {
+async function checkIn(studentId, timetableId, now = new Date(), evidence = {}) {
   const slot = await get(
     `SELECT t.id, t.course_id, t.day, t.time, c.code
      FROM timetable t JOIN courses c ON c.id = t.course_id WHERE t.id = ?`,
@@ -175,7 +176,22 @@ async function checkIn(studentId, timetableId, now = new Date()) {
   );
   if (mark) return { status: mark.present ? 'present' : 'absent', already: true, course_code: slot.code };
 
-  await Attendance.recordClass({ studentId, courseId: slot.course_id, classDate: dayStr, present: true, recordedBy: studentId });
+  // Campus check: flagged for review, or refused when CHECKIN_OFF_CAMPUS=block.
+  const campus = Detect.checkCampus({ studentId, timetableId, classDate: dayStr, ip: evidence.ip });
+  if (campus.flagged) {
+    await Detect.raiseOffCampus({ studentId, timetableId, classDate: dayStr, ip: evidence.ip, deviceId: evidence.deviceId, blocked: campus.block });
+    if (campus.block) throw new CheckInError(403, 'Check-in is only allowed from the campus network');
+  }
+
+  await Attendance.recordClass({
+    studentId,
+    courseId: slot.course_id,
+    classDate: dayStr,
+    present: true,
+    recordedBy: studentId,
+    evidence: { deviceId: evidence.deviceId, ip: evidence.ip },
+  });
+  await Detect.afterCheckIn({ studentId, courseId: slot.course_id, timetableId, classDate: dayStr, deviceId: evidence.deviceId, ip: evidence.ip });
   return { status: 'present', already: false, course_code: slot.code };
 }
 

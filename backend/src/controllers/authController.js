@@ -4,6 +4,7 @@ const { hashPassword, comparePassword, generateToken } = require('../utils/auth'
 const bcrypt = require('bcryptjs');
 const { validateEmail, validateName, validatePassword } = require('../utils/validate');
 const Session = require('../models/Session');
+const Detect = require('../utils/detect');
 
 const deviceOf = (req) => (req.headers['x-device-id'] || '').toString().slice(0, 64) || null;
 
@@ -12,7 +13,8 @@ const deviceOf = (req) => (req.headers['x-device-id'] || '').toString().slice(0,
 const startSession = async (req, user) => {
   const sid = await Session.create({ userId: user.id, deviceId: deviceOf(req), ip: req.ip, userAgent: req.headers['user-agent'] });
   if (user.role === 'student') {
-    await Session.revokeOthers(user.id, sid, 'replaced');
+    const ended = await Session.revokeOthers(user.id, sid, 'replaced');
+    if (ended.changes > 0) await detectSafely(() => Detect.afterSessionReplaced({ userId: user.id }));
   }
   return generateToken(user, sid);
 };
@@ -79,13 +81,20 @@ const register = async (req, res) => {
 };
 
 // Best effort: a failure to write the log must never block signing in.
-const recordLogin = (req, userId, success) => {
-  db.run(
-    'INSERT INTO login_log (user_id, success, ip, user_agent, device_id) VALUES (?, ?, ?, ?, ?)',
-    [userId, success ? 1 : 0, req.ip, (req.headers['user-agent'] || '').slice(0, 200), deviceOf(req)],
-    (err) => err && console.error('login log failed:', err.message)
+const recordLogin = (req, userId, success) =>
+  new Promise((resolve) =>
+    db.run(
+      'INSERT INTO login_log (user_id, success, ip, user_agent, device_id) VALUES (?, ?, ?, ?, ?)',
+      [userId, success ? 1 : 0, req.ip, (req.headers['user-agent'] || '').slice(0, 200), deviceOf(req)],
+      (err) => {
+        if (err) console.error('login log failed:', err.message);
+        resolve();
+      }
+    )
   );
-};
+
+// Detection runs after the sign-in is logged, and never blocks the response.
+const detectSafely = (fn) => fn().catch((err) => console.error('detection failed:', err.message));
 
 const login = async (req, res) => {
   try {
@@ -104,21 +113,26 @@ const login = async (req, res) => {
     // Locked after repeated failures. Attempts while locked are not logged, so the lock
     // ends LOCK_MINUTES after the last real failure and cannot be extended by an attacker.
     if ((await recentFailures(user.id)) >= LOCK_AFTER_FAILURES) {
+      await detectSafely(() => Detect.onAccountLocked({ userId: user.id, ip: req.ip, deviceId: deviceOf(req) }));
       return res.status(429).json({ message: `Too many failed attempts. Try again in ${LOCK_MINUTES} minutes.` });
     }
 
     const isMatch = await comparePassword(String(password), user.password_hash);
     if (!isMatch) {
-      recordLogin(req, user.id, false);
+      await recordLogin(req, user.id, false);
+      await detectSafely(() => Detect.afterFailedLogin({ userId: user.id, ip: req.ip, deviceId: deviceOf(req) }));
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     if (user.is_active === 0) {
-      recordLogin(req, user.id, false);
+      await recordLogin(req, user.id, false);
       return res.status(403).json({ message: 'This account is deactivated. Contact an administrator.' });
     }
 
-    recordLogin(req, user.id, true);
+    await recordLogin(req, user.id, true);
+    if (user.role === 'student') {
+      await detectSafely(() => Detect.afterStudentLogin({ userId: user.id, deviceId: deviceOf(req), ip: req.ip }));
+    }
     const token = await startSession(req, user);
 
     res.json({

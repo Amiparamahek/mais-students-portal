@@ -14,6 +14,8 @@ const path = require('path');
 
 const db = require('./config/database');
 const { applySecurity, limits } = require('./middleware/security');
+const settings = require('./utils/settings');
+settings.set(config);
 const auditAdminWrites = require('./middleware/audit');
 
 const authRoutes = require('./routes/auth');
@@ -27,6 +29,7 @@ const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/users');
 const teachingRoutes = require('./routes/teaching');
+const securityRoutes = require('./routes/security');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -58,6 +61,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teaching', teachingRoutes);
+app.use('/api/admin/security', securityRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

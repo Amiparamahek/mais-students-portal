@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const { toISODate, weekdayOf, slotMinutes } = require('../utils/dates');
 const { windowState } = require('../utils/sessions');
+const SecurityEvent = require('../models/SecurityEvent');
 
 const all = (sql, params = []) =>
   new Promise((resolve, reject) => db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))));
@@ -106,8 +107,34 @@ async function studentProfile(id) {
     [id]
   );
 
+  // Browsers this account has signed in from, and how many other student accounts used each one.
+  const devices = await all(
+    `SELECT l.device_id, MIN(l.logged_in_at) AS first_seen, MAX(l.logged_in_at) AS last_seen,
+            COUNT(*) AS sign_ins, MAX(l.ip) AS ip,
+            (SELECT COUNT(DISTINCT x.user_id) FROM login_log x JOIN users u ON u.id = x.user_id
+             WHERE x.device_id = l.device_id AND x.success = 1 AND u.role = 'student') AS accounts_on_device
+     FROM login_log l WHERE l.user_id = ? AND l.success = 1 AND l.device_id IS NOT NULL
+     GROUP BY l.device_id ORDER BY last_seen DESC LIMIT 20`,
+    [id]
+  );
+
+  // Where each check-in came from (only check-ins made after evidence was recorded).
+  const checkIns = await all(
+    `SELECT l.class_date, l.recorded_at, l.device_id, l.check_in_ip, c.code AS course_code
+     FROM attendance_log l JOIN courses c ON c.id = l.course_id
+     WHERE l.student_id = ? AND l.recorded_by = ? AND l.device_id IS NOT NULL
+     ORDER BY l.recorded_at DESC LIMIT 30`,
+    [id, id]
+  );
+
+  const flags = await SecurityEvent.forStudent(id);
+  const openFlags = flags.filter((f) => f.status === 'open').length;
+
   return {
     student,
+    devices,
+    checkIns,
+    security: { open: openFlags, events: flags },
     summary: {
       classes: enrollments.length,
       lectures_held: held,
@@ -230,6 +257,7 @@ async function overview(now = new Date()) {
 
   return {
     generated_at: now.toISOString(),
+    security: await SecurityEvent.summary(),
     date: today,
     day: dayName,
     threshold: AT_RISK_BELOW,

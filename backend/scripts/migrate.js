@@ -10,6 +10,7 @@ const dbPath = path.join(__dirname, '../database.sqlite');
 const ensureColumns = {
   users: { avatar_url: 'TEXT', phone: 'TEXT' },
   login_log: { device_id: 'TEXT' },
+  attendance_log: { device_id: 'TEXT', check_in_ip: 'TEXT', recorded_at: 'TEXT' },
   timetable: { building: 'TEXT', created_on: 'TEXT' },
   exams: { exam_end_time: 'TEXT' },
   courses: {
