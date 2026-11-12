@@ -22,6 +22,8 @@ router.delete('/students/:id', auth, adminOnly, adminController.deleteStudent);
 router.post('/students/:id/reset-password', auth, adminOnly, adminController.resetStudentPassword);
 router.put('/students/:id/toggle-active', auth, adminOnly, adminController.toggleStudentActive);
 router.get('/students/:id/courses', auth, adminOnly, adminController.getStudentCourses);
+router.get('/students/:id/sessions', auth, adminOnly, adminController.getStudentSessions);
+router.post('/students/:id/sessions/revoke', auth, adminOnly, adminController.endStudentSessions);
 
 // Course management
 router.get('/courses', auth, adminOnly, adminController.getCourses);

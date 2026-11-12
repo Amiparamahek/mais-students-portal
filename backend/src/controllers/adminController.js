@@ -5,6 +5,7 @@ const { notifyStudents } = require('../utils/notify');
 const Enrollment = require('../models/Enrollment');
 const Attendance = require('../models/Attendance');
 const { hashPassword } = require('../utils/auth');
+const Session = require('../models/Session');
 const { validateEmail, validateName, validatePassword, generateTempPassword } = require('../utils/validate');
 
 const getAccounts = async (req, res) => {
@@ -90,6 +91,7 @@ const resetStudentPassword = async (req, res) => {
     }
     const temporaryPassword = generateTempPassword();
     await User.updatePassword(user.id, await hashPassword(temporaryPassword));
+    await Session.revokeAll(user.id, 'password');
     res.json({ temporaryPassword, message: 'Password reset' });
   } catch (err) {
     console.error(err);
@@ -189,6 +191,27 @@ const deleteStudent = async (req, res) => {
   }
 };
 
+// Sessions of one account, for the admin: where and when it was signed in.
+const getStudentSessions = async (req, res) => {
+  try {
+    res.json(await Session.listForUser(req.params.id));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Ends every active session of an account (for example a shared password).
+const endStudentSessions = async (req, res) => {
+  try {
+    const result = await Session.revokeAll(req.params.id, 'admin');
+    res.json({ message: `Ended ${result.changes} active session(s)`, ended: result.changes });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const toggleStudentActive = async (req, res) => {
   try {
     const { id } = req.params;
@@ -196,6 +219,9 @@ const toggleStudentActive = async (req, res) => {
     const result = await User.toggleActive(id, is_active);
     if (result.changes === 0) {
       return res.status(404).json({ message: 'Student not found' });
+    }
+    if (!is_active) {
+      await Session.revokeAll(id, 'deactivated');
     }
     res.json({ message: `Student ${is_active ? 'activated' : 'deactivated'}` });
   } catch (err) {
@@ -270,6 +296,8 @@ module.exports = {
   updateStudent,
   deleteStudent,
   toggleStudentActive,
+  getStudentSessions,
+  endStudentSessions,
   getStudentCourses,
   getCourseStudents,
   getAttendanceReport,

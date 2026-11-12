@@ -13,6 +13,16 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Why we were sent here (e.g. signed in on another device), shown once.
+  const [notice, setNotice] = useState(() => {
+    try {
+      const msg = sessionStorage.getItem('signout_notice');
+      sessionStorage.removeItem('signout_notice');
+      return msg || '';
+    } catch (_) {
+      return '';
+    }
+  });
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -55,6 +65,9 @@ export default function Login() {
             <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
+          )}
+          {notice && (
+            <p className="mb-4 rounded-md border bg-muted px-3 py-2 text-sm" role="status">{notice}</p>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

@@ -13,9 +13,10 @@ const comparePassword = async (plainPassword, hashedPassword) => {
   return bcrypt.compare(plainPassword, hashedPassword);
 };
 
-const generateToken = (user) => {
+// sid ties the token to a server-side session; revoking the session ends the token at once.
+const generateToken = (user, sid) => {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, sid },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );

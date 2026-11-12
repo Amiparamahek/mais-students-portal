@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { deviceId } from '../lib/device';
 
 const API_BASE = '/api';
 
@@ -16,6 +17,8 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const device = deviceId();
+    if (device) config.headers['X-Device-Id'] = device;
     return config;
   },
   (error) => Promise.reject(error)
@@ -26,9 +29,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
+      // Tell the login page why (e.g. signed in on another device). Only the server's
+      // message is shown, never a token.
+      try {
+        sessionStorage.setItem('signout_notice', error.response.data?.message || 'Your session has ended. Sign in again.');
+      } catch (_) {
+        /* storage blocked */
+      }
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login') window.location.href = '/login';
     }
     return Promise.reject(error);
   }

@@ -40,12 +40,16 @@ function applySecurity(app, config) {
   );
 }
 
+const EXEMPT_FROM_API_LIMIT = new Set(['/api/auth/login', '/api/auth/register', '/api/health']);
+
 // Order matters: the specific limiters are registered before the general one.
 const limits = {
   // Failures only. The per-account lockout in the login handler does the precise work.
+  // Per address, so it stops password spraying. A campus shares one address, so this is high;
+  // each account is protected separately by the lockout in the login handler.
   login: limiter({
     windowMs: 15 * 60 * 1000,
-    limit: 100,
+    limit: 300,
     skipSuccessfulRequests: true,
     message: 'Too many failed sign-in attempts from this network. Try again later.',
   }),
@@ -56,6 +60,9 @@ const limits = {
     // The live-refresh pages poll every few seconds, so signed-in users get generous room.
     limit: (req) => (userOrIp(req).startsWith('u:') ? 600 : 120),
     keyGenerator: userOrIp,
+    // Sign-in, sign-up and the health check have their own limits. Counting them here would
+    // let the whole campus, which shares one public address, lock itself out at lecture start.
+    skip: (req) => EXEMPT_FROM_API_LIMIT.has(req.originalUrl.split('?')[0]),
   }),
 };
 

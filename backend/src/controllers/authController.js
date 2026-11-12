@@ -3,6 +3,19 @@ const User = require('../models/User');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
 const bcrypt = require('bcryptjs');
 const { validateEmail, validateName, validatePassword } = require('../utils/validate');
+const Session = require('../models/Session');
+
+const deviceOf = (req) => (req.headers['x-device-id'] || '').toString().slice(0, 64) || null;
+
+// Starts a session and returns its token. A student may be signed in on one device only:
+// the earlier sessions are ended, so a shared password cannot run two sessions at once.
+const startSession = async (req, user) => {
+  const sid = await Session.create({ userId: user.id, deviceId: deviceOf(req), ip: req.ip, userAgent: req.headers['user-agent'] });
+  if (user.role === 'student') {
+    await Session.revokeOthers(user.id, sid, 'replaced');
+  }
+  return generateToken(user, sid);
+};
 
 // Comparing against this when the email is unknown keeps the response time the same, so
 // the timing does not reveal which emails have accounts.
@@ -53,7 +66,7 @@ const register = async (req, res) => {
     const result = await User.create({ name: name.trim(), email: email.trim(), passwordHash, role: 'student', studentId, faculty, programme, academicYear });
 
     const user = await User.findById(result.id);
-    const token = generateToken(user);
+    const token = await startSession(req, user);
 
     res.status(201).json({
       token,
@@ -68,8 +81,8 @@ const register = async (req, res) => {
 // Best effort: a failure to write the log must never block signing in.
 const recordLogin = (req, userId, success) => {
   db.run(
-    'INSERT INTO login_log (user_id, success, ip, user_agent) VALUES (?, ?, ?, ?)',
-    [userId, success ? 1 : 0, req.ip, (req.headers['user-agent'] || '').slice(0, 200)],
+    'INSERT INTO login_log (user_id, success, ip, user_agent, device_id) VALUES (?, ?, ?, ?, ?)',
+    [userId, success ? 1 : 0, req.ip, (req.headers['user-agent'] || '').slice(0, 200), deviceOf(req)],
     (err) => err && console.error('login log failed:', err.message)
   );
 };
@@ -106,12 +119,22 @@ const login = async (req, res) => {
     }
 
     recordLogin(req, user.id, true);
-    const token = generateToken(user);
+    const token = await startSession(req, user);
 
     res.json({
       token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, studentId: user.student_id },
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    await Session.revoke(req.user.sid, 'logout');
+    res.json({ message: 'Signed out' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -155,6 +178,8 @@ const changePassword = async (req, res) => {
 
     const passwordHash = await hashPassword(newPassword);
     await User.updatePassword(req.user.id, passwordHash);
+    // Other devices must sign in again with the new password; this one stays signed in.
+    await Session.revokeOthers(req.user.id, req.user.sid, 'password');
 
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
@@ -163,4 +188,4 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, me, changePassword };
+module.exports = { register, login, logout, me, changePassword, startSession };

@@ -27,7 +27,13 @@ export function AuthProvider({ children }) {
     setUser(userData);
   };
 
-  const logout = () => {
+  // Ends the session on the server too, so the token stops working everywhere at once.
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (_) {
+      /* already signed out or offline: clear locally anyway */
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
