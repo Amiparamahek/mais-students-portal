@@ -3,8 +3,9 @@ import useLiveFetch from '../hooks/useLiveFetch';
 import { Link } from 'react-router-dom';
 import { Approved, Award, Book, Calendar, Clipboard } from '@duo-icons/react';
 import api from '../services/api';
-import { toISODate, weekdayOf, slotStart } from '../lib/date';
+import { toISODate } from '../lib/date';
 import StatCard from '../components/StatCard';
+import TodayLectures from '../components/TodayLectures';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -43,11 +44,7 @@ export default function StudentDashboard() {
   const avgAttendance = held ? Math.round((attended / held) * 100) : 0;
 
   const today = new Date();
-  const todayName = weekdayOf(today);
   const todayISO = toISODate(today);
-  const todaysLectures = timetable
-    .filter((t) => t.day === todayName)
-    .sort((a, b) => slotStart(a.time).localeCompare(slotStart(b.time)));
   const upcomingExams = exams.filter((x) => x.exam_date >= todayISO).slice(0, 3);
 
   if (loading) {
@@ -71,35 +68,7 @@ export default function StudentDashboard() {
         <StatCard title="Published grades" value={grades.length} icon={Award} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Today: {todayName}</CardTitle>
-          <CardDescription>
-            {todaysLectures.length === 0
-              ? 'No lectures today.'
-              : `${todaysLectures.length} ${todaysLectures.length === 1 ? 'lecture' : 'lectures'} today`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {todaysLectures.length > 0 && (
-            <ul className="divide-y">
-              {todaysLectures.map((t) => (
-                <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <div>
-                    <p className="font-medium">{t.course_code} - {t.course_name}</p>
-                    <p className="text-sm text-muted-foreground">{t.lecturer || 'Lecturer not set'}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{t.time}</Badge>
-                    <Badge variant="outline">Room {t.room || '-'}</Badge>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link to="/student/timetable" className="mt-4 inline-block text-sm underline">Full weekly timetable</Link>
-        </CardContent>
-      </Card>
+      <TodayLectures />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
