@@ -2,6 +2,7 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Attendance = require('../models/Attendance');
 const { toISODate } = require('../utils/dates');
+const { finalizeEndedSessions } = require('../utils/sessions');
 
 const fail = (res, err) => {
   console.error(err);
@@ -29,6 +30,7 @@ const getClassStudents = async (req, res) => {
 const getClassAttendance = async (req, res) => {
   try {
     const courseId = Number(req.params.id);
+    await finalizeEndedSessions();
     const date = req.query.date || toISODate();
     res.json({
       date,

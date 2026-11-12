@@ -31,4 +31,4 @@ const slotsOverlap = (a, b) => {
   return a1 < b2 && b1 < a2;
 };
 
-module.exports = { toISODate, weekdayOf, WEEKDAYS, TIME_RE, HHMM_RE, slotsOverlap };
+module.exports = { toISODate, weekdayOf, WEEKDAYS, TIME_RE, HHMM_RE, slotsOverlap, slotMinutes };

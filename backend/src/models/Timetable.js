@@ -1,3 +1,4 @@
+const { toISODate } = require('../utils/dates');
 const db = require('../config/database');
 
 const Timetable = {
@@ -48,8 +49,8 @@ const Timetable = {
   create: ({ courseId, day, time, building, room, week }) => {
     return new Promise((resolve, reject) => {
       db.run(
-        `INSERT INTO timetable (course_id, day, time, building, room, week) VALUES (?, ?, ?, ?, ?, ?)`,
-        [courseId, day, time, building, room, week],
+        `INSERT INTO timetable (course_id, day, time, building, room, week, created_on) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [courseId, day, time, building, room, week, toISODate()],
         function (err) {
           if (err) reject(err);
           else resolve({ id: this.lastID });

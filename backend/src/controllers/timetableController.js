@@ -1,6 +1,6 @@
 const Timetable = require('../models/Timetable');
 const { notifyStudents } = require('../utils/notify');
-const { WEEKDAYS, TIME_RE, slotsOverlap } = require('../utils/dates');
+const { WEEKDAYS, TIME_RE, slotsOverlap, slotMinutes } = require('../utils/dates');
 
 const fail = (res, err) => {
   console.error(err);
@@ -69,6 +69,8 @@ const roomBookedBy = async ({ day, time, building, room, excludeId }) => {
 const validSlot = ({ day, time }) => {
   if (!WEEKDAYS.includes(day)) return 'Day must be a weekday name, e.g. Monday';
   if (!TIME_RE.test(time || '')) return 'Time must look like 09:00-10:30';
+  const [start, end] = slotMinutes(time);
+  if (end <= start) return 'End time must be after start time';
   return null;
 };
 

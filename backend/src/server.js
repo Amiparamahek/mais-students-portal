@@ -43,6 +43,10 @@ app.use('/api/teaching', teachingRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  // Errors with a status (e.g. malformed JSON from body-parser) keep it; everything else is a 500.
+  if (err.status && err.status < 500) {
+    return res.status(err.status).json({ message: 'Bad request' });
+  }
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error' });
 });

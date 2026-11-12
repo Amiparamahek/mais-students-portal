@@ -1,12 +1,14 @@
 const Attendance = require('../models/Attendance');
 const Enrollment = require('../models/Enrollment');
 const { toISODate } = require('../utils/dates');
+const { finalizeEndedSessions } = require('../utils/sessions');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Per-date record of the student's own classes.
 const getMyLog = async (req, res) => {
   try {
+    await finalizeEndedSessions();
     res.json(await Attendance.getStudentLog(req.user.id));
   } catch (err) {
     console.error(err);
@@ -16,6 +18,7 @@ const getMyLog = async (req, res) => {
 
 const getMyAttendance = async (req, res) => {
   try {
+    await finalizeEndedSessions();
     res.json(await Attendance.getByStudent(req.user.id));
   } catch (err) {
     console.error(err);
