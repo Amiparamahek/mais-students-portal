@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const Notification = require('../models/Notification');
 
 const getByUser = async (req, res) => {
@@ -25,6 +26,10 @@ const create = async (req, res) => {
     const { userId, title, message } = req.body;
     if (!userId || !title || !message) {
       return res.status(400).json({ message: 'User, title, and message are required' });
+    }
+    const recipient = await User.findById(userId);
+    if (!recipient) {
+      return res.status(404).json({ message: 'Recipient not found' });
     }
     const result = await Notification.create({ userId, title, message });
     res.status(201).json({ id: result.id, message: 'Notification created' });

@@ -30,7 +30,7 @@ const getMyAttendance = async (req, res) => {
 // Body: { date: 'YYYY-MM-DD', records: [{ student_id, course_id, present }] }
 const createOrUpdate = async (req, res) => {
   try {
-    if (!Array.isArray(req.body.records)) {
+    if (!Array.isArray(req.body.records) || req.body.records.length === 0) {
       return res.status(400).json({ message: 'records array is required' });
     }
     const classDate = req.body.date || toISODate();

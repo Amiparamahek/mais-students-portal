@@ -33,9 +33,27 @@ function windowState(slotTime, date, now) {
   return 'upcoming';
 }
 
+// Runs at most once at a time, and at most every MIN_INTERVAL_MS, however many requests
+// arrive (the dashboard refreshes itself every few seconds). Pass an explicit `now` to
+// run it for a given clock, as the tests do.
+const MIN_INTERVAL_MS = 30 * 1000;
+let running = null;
+let lastRunAt = 0;
+
+function finalizeEndedSessions(now) {
+  if (now) return finalizeAt(now);
+  if (running) return running;
+  if (Date.now() - lastRunAt < MIN_INTERVAL_MS) return Promise.resolve();
+  running = finalizeAt(new Date()).finally(() => {
+    lastRunAt = Date.now();
+    running = null;
+  });
+  return running;
+}
+
 // Records absences for slots whose window has closed. Slots without created_on (rows from
 // before this feature) are skipped, so old history is never rewritten.
-async function finalizeEndedSessions(now = new Date()) {
+async function finalizeAt(now) {
   for (let back = LOOKBACK_DAYS; back >= 0; back--) {
     const date = new Date(now);
     date.setDate(date.getDate() - back);
@@ -77,8 +95,11 @@ async function finalizeEndedSessions(now = new Date()) {
 }
 
 // Today's lectures for one student, with what they can do right now.
-async function todayForStudent(studentId, now = new Date()) {
-  await finalizeEndedSessions(now);
+async function todayForStudent(studentId, clock) {
+  // A test clock bypasses the throttle; the server uses the throttled path.
+  if (clock) await finalizeAt(clock);
+  else await finalizeEndedSessions();
+  const now = clock || new Date();
   const dayStr = toISODate(now);
   const slots = await all(
     `SELECT t.id, t.course_id, t.day, t.time, t.room, t.building, c.code, c.name
@@ -158,4 +179,4 @@ async function checkIn(studentId, timetableId, now = new Date()) {
   return { status: 'present', already: false, course_code: slot.code };
 }
 
-module.exports = { finalizeEndedSessions, todayForStudent, checkIn, CheckInError, CHECKIN_BEFORE_MIN, windowState };
+module.exports = { finalizeEndedSessions, finalizeAt, todayForStudent, checkIn, CheckInError, CHECKIN_BEFORE_MIN, windowState };

@@ -7,38 +7,49 @@ const get = (sql, params) =>
 const all = (sql, params) =>
   new Promise((resolve, reject) => db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))));
 
+// Serializes attendance writes inside this process.
+let writeChain = Promise.resolve();
+const withWriteLock = (fn) => {
+  const result = writeChain.then(fn);
+  writeChain = result.catch(() => {});
+  return result;
+};
+
 const Attendance = {
   // Record a student's attendance for one class date. Saving the same date again changes
-  // the result instead of counting the class twice.
-  recordClass: async ({ studentId, courseId, classDate, present, recordedBy }) => {
-    const flag = present ? 1 : 0;
-    const prev = await get(
-      'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ?',
-      [studentId, courseId, classDate]
-    );
-    if (!prev) {
-      await run(
-        `INSERT INTO attendance (student_id, course_id, classes_held, classes_attended) VALUES (?, ?, 1, ?)
-         ON CONFLICT(student_id, course_id) DO UPDATE SET
-           classes_held = classes_held + 1,
-           classes_attended = classes_attended + excluded.classes_attended`,
-        [studentId, courseId, flag]
+  // the result instead of counting the class twice. Writes run one at a time so that
+  // concurrent requests (live refresh, auto-absence, check-in) cannot double-insert.
+  recordClass: ({ studentId, courseId, classDate, present, recordedBy }) =>
+    withWriteLock(async () => {
+      const flag = present ? 1 : 0;
+      const prev = await get(
+        'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ?',
+        [studentId, courseId, classDate]
       );
-      await run(
-        'INSERT INTO attendance_log (student_id, course_id, class_date, present, recorded_by) VALUES (?, ?, ?, ?, ?)',
-        [studentId, courseId, classDate, flag, recordedBy]
-      );
-    } else if (prev.present !== flag) {
-      await run(
-        'UPDATE attendance SET classes_attended = classes_attended + ? WHERE student_id = ? AND course_id = ?',
-        [flag - prev.present, studentId, courseId]
-      );
-      await run(
-        'UPDATE attendance_log SET present = ?, recorded_by = ? WHERE student_id = ? AND course_id = ? AND class_date = ?',
-        [flag, recordedBy, studentId, courseId, classDate]
-      );
-    }
-  },
+      if (!prev) {
+        const ins = await run(
+          'INSERT OR IGNORE INTO attendance_log (student_id, course_id, class_date, present, recorded_by) VALUES (?, ?, ?, ?, ?)',
+          [studentId, courseId, classDate, flag, recordedBy]
+        );
+        if (ins.changes === 0) return; // already recorded
+        await run(
+          `INSERT INTO attendance (student_id, course_id, classes_held, classes_attended) VALUES (?, ?, 1, ?)
+           ON CONFLICT(student_id, course_id) DO UPDATE SET
+             classes_held = classes_held + 1,
+             classes_attended = classes_attended + excluded.classes_attended`,
+          [studentId, courseId, flag]
+        );
+      } else if (prev.present !== flag) {
+        await run(
+          'UPDATE attendance SET classes_attended = classes_attended + ? WHERE student_id = ? AND course_id = ?',
+          [flag - prev.present, studentId, courseId]
+        );
+        await run(
+          'UPDATE attendance_log SET present = ?, recorded_by = ? WHERE student_id = ? AND course_id = ? AND class_date = ?',
+          [flag, recordedBy, studentId, courseId, classDate]
+        );
+      }
+    }),
 
   getLogForDate: (courseId, classDate) =>
     all('SELECT student_id, present FROM attendance_log WHERE course_id = ? AND class_date = ?', [courseId, classDate]),
