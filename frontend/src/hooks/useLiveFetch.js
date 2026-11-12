@@ -23,8 +23,12 @@ export default function useLiveFetch(fetcher, deps = []) {
     run();
     const timer = setInterval(run, INTERVAL_MS);
     window.addEventListener('focus', run);
+    // A server event (new reply, approval, attendance) refreshes the data at once.
+    const onServerEvent = () => latest.current && latest.current();
     document.addEventListener('visibilitychange', run);
+    window.addEventListener('mais:event', onServerEvent);
     return () => {
+      window.removeEventListener('mais:event', onServerEvent);
       clearInterval(timer);
       window.removeEventListener('focus', run);
       document.removeEventListener('visibilitychange', run);

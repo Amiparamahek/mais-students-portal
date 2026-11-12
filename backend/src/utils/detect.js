@@ -46,10 +46,11 @@ async function raiseOffCampus({ studentId, timetableId, classDate, ip, deviceId,
 // that do this repeatedly.
 async function afterCheckIn({ studentId, courseId, timetableId, classDate, deviceId, ip }) {
   if (!deviceId) return;
+  // Same lecture slot, same browser, other student accounts.
   const others = await all(
     `SELECT DISTINCT student_id FROM attendance_log
-     WHERE course_id = ? AND class_date = ? AND present = 1 AND device_id = ? AND student_id <> ?`,
-    [courseId, classDate, deviceId, studentId]
+     WHERE timetable_id = ? AND class_date = ? AND present = 1 AND device_id = ? AND student_id <> ?`,
+    [timetableId, classDate, deviceId, studentId]
   );
   for (const { student_id: other } of others) {
     const [a, b] = [studentId, other].sort((x, y) => x - y);

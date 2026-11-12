@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useLiveFetch from '../hooks/useLiveFetch';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { Button } from '@/components/ui/button';
 import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 
 export default function AdminStudents() {
@@ -341,6 +342,86 @@ export default function AdminStudents() {
           </tbody>
         </table>
       </div>
+      <PendingRegistrations onChanged={fetchStudents} />
+      <DeletedStudents onRestored={fetchStudents} />
+    </div>
+  );
+}
+
+// Soft-deleted students: their records are kept, and an admin can bring one back.
+function DeletedStudents({ onRestored }) {
+  const [rows, setRows] = useState([]);
+  const [open, setOpen] = useState(false);
+  const load = () => api.get('/admin/students-deleted').then((r) => setRows(r.data)).catch(() => {});
+  useEffect(() => {
+    if (open) load();
+  }, [open]);
+  const restore = async (id) => {
+    await api.post(`/admin/students/${id}/restore`);
+    await load();
+    onRestored?.();
+  };
+  return (
+    <div className="space-y-3">
+      <Button variant="outline" size="sm" onClick={() => setOpen(!open)}>{open ? 'Hide deleted students' : 'Show deleted students'}</Button>
+      {open && (
+        <div className="rounded-lg border bg-card">
+          {rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">No deleted students.</p>}
+          {rows.map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-4 border-b p-3 last:border-b-0">
+              <div>
+                <p className="font-medium">{r.name}</p>
+                <p className="text-xs text-muted-foreground">{r.student_id} · {r.email} · deleted {r.deleted_at}</p>
+              </div>
+              <Button size="sm" onClick={() => restore(r.id)}>Restore</Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Self-registrations waiting for approval. Approving gives the student their ID.
+function PendingRegistrations({ onChanged }) {
+  const [rows, setRows] = useState([]);
+  const [note, setNote] = useState('');
+  const load = () => api.get('/admin/registrations').then((r) => setRows(r.data)).catch(() => {});
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 10000);
+    return () => clearInterval(t);
+  }, []);
+  const approve = async (r) => {
+    const res = await api.post(`/admin/registrations/${r.id}/approve`);
+    alert(res.data.message);
+    await load();
+    onChanged?.();
+  };
+  const reject = async (r) => {
+    if (!confirm(`Reject the registration of ${r.name}?`)) return;
+    await api.post(`/admin/registrations/${r.id}/reject`, { note });
+    await load();
+  };
+  if (rows.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-foreground/20 bg-card p-4 space-y-3">
+      <div>
+        <p className="font-semibold">Waiting for approval ({rows.length})</p>
+        <p className="text-xs text-muted-foreground">Check the person, then approve to give them a student ID.</p>
+      </div>
+      {rows.map((r) => (
+        <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+          <div>
+            <p className="font-medium">{r.name}</p>
+            <p className="text-xs text-muted-foreground">{r.email} · {r.programme || 'no programme'} · {r.created_at}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => approve(r)}>Approve</Button>
+            <Button size="sm" variant="outline" onClick={() => reject(r)}>Reject</Button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

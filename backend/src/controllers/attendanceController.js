@@ -47,6 +47,7 @@ const createOrUpdate = async (req, res) => {
       await Attendance.recordClass({
         studentId,
         courseId,
+        timetableId: Number(r.timetable_id ?? r.timetableId) || null,
         classDate,
         present: !!r.present,
         recordedBy: req.user.id,

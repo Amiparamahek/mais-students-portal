@@ -1,0 +1,9 @@
+# HTTPS for the portal. Caddy gets and renews the certificate automatically.
+# Replace the domain, then run: caddy run --config deploy/Caddyfile
+portal.example.edu {
+  encode zstd gzip
+  reverse_proxy localhost:5001
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  }
+}

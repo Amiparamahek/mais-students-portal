@@ -80,7 +80,7 @@ const User = {
 
   getAll: () => {
     return new Promise((resolve, reject) => {
-      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users`, (err, rows) => {
+      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at, deleted_at FROM users WHERE deleted_at IS NULL`, (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
@@ -89,7 +89,7 @@ const User = {
 
   getStudents: () => {
     return new Promise((resolve, reject) => {
-      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users WHERE role = 'student'`, (err, rows) => {
+      db.all(`SELECT id, name, email, role, student_id, faculty, programme, academic_year, study_status, is_active, created_at FROM users WHERE role = 'student' AND deleted_at IS NULL`, (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
@@ -104,6 +104,32 @@ const User = {
       db.run(
         `UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         [...values, id],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    });
+  },
+
+  softDelete: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE users SET deleted_at = CURRENT_TIMESTAMP, is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL`,
+        [id],
+        function (err) {
+          if (err) reject(err);
+          else resolve({ changes: this.changes });
+        }
+      );
+    });
+  },
+
+  restore: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        `UPDATE users SET deleted_at = NULL, is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NOT NULL`,
+        [id],
         function (err) {
           if (err) reject(err);
           else resolve({ changes: this.changes });

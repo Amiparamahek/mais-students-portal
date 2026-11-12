@@ -7,10 +7,18 @@ const courseController = require('../controllers/courseController');
 const timetableController = require('../controllers/timetableController');
 const attendanceController = require('../controllers/attendanceController');
 const analyticsController = require('../controllers/analyticsController');
+const settingsController = require('../controllers/settingsController');
+const registrationController = require('../controllers/registrationController');
+const { requireFeature } = require('../utils/features');
 
 // Dashboard stats
 router.get('/dashboard-stats', auth, adminOnly, adminController.getDashboardStats);
-router.get('/analysis', auth, adminOnly, analyticsController.getOverview);
+router.get('/analysis', auth, adminOnly, requireFeature('analysis'), analyticsController.getOverview);
+router.get('/settings', auth, adminOnly, settingsController.getAdmin);
+router.get('/registrations', auth, adminOnly, registrationController.list);
+router.post('/registrations/:id/approve', auth, adminOnly, registrationController.approve);
+router.post('/registrations/:id/reject', auth, adminOnly, registrationController.reject);
+router.put('/settings', auth, adminOnly, settingsController.putFeatures);
 
 // Student management
 router.get('/students', auth, adminOnly, adminController.getStudents);
@@ -19,6 +27,8 @@ router.get('/students/:id', auth, adminOnly, adminController.getStudent);
 router.post('/students', auth, adminOnly, adminController.createStudent);
 router.put('/students/:id', auth, adminOnly, adminController.updateStudent);
 router.delete('/students/:id', auth, adminOnly, adminController.deleteStudent);
+router.get('/students-deleted', auth, adminOnly, adminController.getDeletedStudents);
+router.post('/students/:id/restore', auth, adminOnly, adminController.restoreStudent);
 router.post('/students/:id/reset-password', auth, adminOnly, adminController.resetStudentPassword);
 router.put('/students/:id/toggle-active', auth, adminOnly, adminController.toggleStudentActive);
 router.get('/students/:id/courses', auth, adminOnly, adminController.getStudentCourses);

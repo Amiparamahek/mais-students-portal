@@ -170,8 +170,8 @@ async function overview(now = new Date()) {
 
   const totals = await get(
     `SELECT
-       (SELECT COUNT(*) FROM users WHERE role = 'student') AS students,
-       (SELECT COUNT(*) FROM users WHERE role = 'student' AND is_active = 1) AS active_students,
+       (SELECT COUNT(*) FROM users WHERE role = 'student' AND deleted_at IS NULL) AS students,
+       (SELECT COUNT(*) FROM users WHERE role = 'student' AND is_active = 1 AND deleted_at IS NULL) AS active_students,
        (SELECT COUNT(*) FROM courses) AS courses,
        (SELECT COUNT(*) FROM enrollments WHERE status = 'enrolled') AS enrollments,
        (SELECT COALESCE(SUM(classes_held), 0) FROM attendance) AS held,
@@ -223,7 +223,7 @@ async function overview(now = new Date()) {
   );
   const neverLoggedIn = await all(
     `SELECT u.id, u.name, u.student_id, u.created_at FROM users u
-     WHERE u.role = 'student' AND NOT EXISTS (SELECT 1 FROM login_log l WHERE l.user_id = u.id AND l.success = 1)
+     WHERE u.role = 'student' AND u.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM login_log l WHERE l.user_id = u.id AND l.success = 1)
      ORDER BY u.name`
   );
 
@@ -231,13 +231,23 @@ async function overview(now = new Date()) {
     `SELECT u.id, u.name, u.student_id, u.programme,
             COALESCE(SUM(a.classes_held), 0) AS held, COALESCE(SUM(a.classes_attended), 0) AS attended
      FROM users u LEFT JOIN attendance a ON a.student_id = u.id
-     WHERE u.role = 'student' GROUP BY u.id`
+     WHERE u.role = 'student' AND u.deleted_at IS NULL GROUP BY u.id`
   );
   const ranked = perStudent
     .filter((s) => s.held > 0)
     .map((s) => ({ ...s, absences: s.held - s.attended, percentage: pct(s.attended, s.held) }));
   const mostAbsent = [...ranked].sort((a, b) => b.absences - a.absences || a.percentage - b.percentage).slice(0, 10);
   const atRisk = ranked.filter((s) => s.percentage < AT_RISK_BELOW).sort((a, b) => a.percentage - b.percentage);
+
+  const perProgramme = (
+    await all(
+      `SELECT COALESCE(NULLIF(u.programme, ''), 'Not set') AS programme,
+              COUNT(DISTINCT u.id) AS students,
+              COALESCE(SUM(a.classes_held), 0) AS held, COALESCE(SUM(a.classes_attended), 0) AS attended
+       FROM users u LEFT JOIN attendance a ON a.student_id = u.id
+       WHERE u.role = 'student' AND u.deleted_at IS NULL GROUP BY programme ORDER BY programme`
+    )
+  ).map((p) => ({ ...p, percentage: pct(p.attended, p.held), at_risk: ranked.filter((r) => r.programme === p.programme && r.percentage < AT_RISK_BELOW).length }));
 
   const perClass = (
     await all(
@@ -278,6 +288,7 @@ async function overview(now = new Date()) {
     mostAbsent,
     atRisk,
     perClass,
+    perProgramme,
     neverLoggedIn,
     recentLogins,
   };

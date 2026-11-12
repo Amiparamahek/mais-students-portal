@@ -8,6 +8,8 @@ const studentMenu = [
   { name: 'Find Courses', icon: Chip, path: '/student/find-courses' },
   { name: 'Attendance', icon: Approved, path: '/student/attendance' },
   { name: 'Grades', icon: Award, path: '/student/grades' },
+  { name: 'My Results', icon: Clipboard, path: '/student/results' },
+  { name: 'Requests', icon: Message2, path: '/student/requests', feature: 'chat' },
   { name: 'Timetable', icon: Calendar, path: '/student/timetable' },
   { name: 'Exams', icon: Clipboard, path: '/student/exams' },
   { name: 'Announcements', icon: Message2, path: '/student/announcements' },

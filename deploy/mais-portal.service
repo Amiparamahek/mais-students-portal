@@ -1,0 +1,18 @@
+# systemd unit: keeps the portal running and restarts it after a crash or reboot.
+# Copy to /etc/systemd/system/, adjust the paths and the user, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now mais-portal
+[Unit]
+Description=MAIS student portal
+After=network.target
+
+[Service]
+Type=simple
+User=mais
+WorkingDirectory=/opt/mais-students-portal/backend
+EnvironmentFile=/opt/mais-students-portal/backend/.env
+ExecStart=/usr/bin/node src/server.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

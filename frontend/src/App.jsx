@@ -18,6 +18,10 @@ const AdminStudents = lazy(() => import('./pages/AdminStudents'));
 const AdminStudentDetail = lazy(() => import('./pages/AdminStudentDetail'));
 const AdminAnalysis = lazy(() => import('./pages/AdminAnalysis'));
 const AdminSecurity = lazy(() => import('./pages/AdminSecurity'));
+const StudentResults = lazy(() => import('./pages/StudentResults'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminRequests = lazy(() => import('./pages/AdminRequests'));
+const StudentRequests = lazy(() => import('./pages/StudentRequests'));
 const AdminCourses = lazy(() => import('./pages/AdminCourses'));
 const AdminAttendance = lazy(() => import('./pages/AdminAttendance'));
 const AdminTimetable = lazy(() => import('./pages/AdminTimetable'));
@@ -39,6 +43,9 @@ const StudentNotifications = lazy(() => import('./pages/StudentNotifications'));
 
 // Auth pages
 import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
 function App() {
@@ -58,6 +65,9 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset" element={<ResetPassword />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Admin routes */}
@@ -73,6 +83,8 @@ function App() {
                   <Route path="students/:id" element={<AdminStudentDetail />} />
                   <Route path="analysis" element={<AdminAnalysis />} />
                   <Route path="security" element={<AdminSecurity />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="requests" element={<AdminRequests />} />
                   <Route path="courses" element={<AdminCourses />} />
                   <Route path="attendance" element={<AdminAttendance />} />
                   <Route path="timetable" element={<AdminTimetable />} />
@@ -105,6 +117,8 @@ function App() {
                   <Route path="exams" element={<StudentExams />} />
                   <Route path="notifications" element={<StudentNotifications />} />
                   <Route path="find-courses" element={<StudentFindCourses />} />
+                  <Route path="results" element={<StudentResults />} />
+                  <Route path="requests" element={<StudentRequests />} />
                 </Routes>
               </StudentLayout>
             ) : (

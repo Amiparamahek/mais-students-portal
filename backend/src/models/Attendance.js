@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { notifyLowAttendance } = require('../utils/notify');
 
 const run = (sql, params) =>
   new Promise((resolve, reject) => db.run(sql, params, function (err) { if (err) reject(err); else resolve(this); }));
@@ -19,20 +20,22 @@ const Attendance = {
   // Record a student's attendance for one class date. Saving the same date again changes
   // the result instead of counting the class twice. Writes run one at a time so that
   // concurrent requests (live refresh, auto-absence, check-in) cannot double-insert.
-  recordClass: ({ studentId, courseId, classDate, present, recordedBy, evidence }) =>
+  // Keyed by lecture slot (timetable_id). 0 means a manual, class-level mark with no slot.
+  recordClass: ({ studentId, courseId, classDate, present, recordedBy, evidence, timetableId }) =>
     withWriteLock(async () => {
       const flag = present ? 1 : 0;
+      const slot = timetableId || 0;
       const prev = await get(
-        'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ?',
-        [studentId, courseId, classDate]
+        'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ? AND IFNULL(timetable_id, 0) = ?',
+        [studentId, courseId, classDate, slot]
       );
       if (!prev) {
         const ins = await run(
           `INSERT OR IGNORE INTO attendance_log
-             (student_id, course_id, class_date, present, recorded_by, device_id, check_in_ip, recorded_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             (student_id, course_id, class_date, present, recorded_by, device_id, check_in_ip, recorded_at, timetable_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [studentId, courseId, classDate, flag, recordedBy, evidence?.deviceId || null, evidence?.ip || null,
-           new Date().toISOString()]
+           new Date().toISOString(), timetableId || null]
         );
         if (ins.changes === 0) return; // already recorded
         await run(
@@ -48,18 +51,23 @@ const Attendance = {
           [flag - prev.present, studentId, courseId]
         );
         await run(
-          'UPDATE attendance_log SET present = ?, recorded_by = ? WHERE student_id = ? AND course_id = ? AND class_date = ?',
-          [flag, recordedBy, studentId, courseId, classDate]
+          'UPDATE attendance_log SET present = ?, recorded_by = ? WHERE student_id = ? AND course_id = ? AND class_date = ? AND IFNULL(timetable_id, 0) = ?',
+          [flag, recordedBy, studentId, courseId, classDate, slot]
         );
       }
+      require('../utils/events').emitTo(studentId, { type: 'attendance' });
+      if (!flag) await notifyLowAttendance(studentId, courseId);
     }),
 
-  getLogForDate: (courseId, classDate) =>
-    all('SELECT student_id, present FROM attendance_log WHERE course_id = ? AND class_date = ?', [courseId, classDate]),
+  // Marks for one class on one date; pass a lecture slot to narrow to that lecture.
+  getLogForDate: (courseId, classDate, timetableId) =>
+    timetableId
+      ? all('SELECT student_id, present, timetable_id FROM attendance_log WHERE course_id = ? AND class_date = ? AND timetable_id = ?', [courseId, classDate, timetableId])
+      : all('SELECT student_id, present, timetable_id FROM attendance_log WHERE course_id = ? AND class_date = ?', [courseId, classDate]),
 
   getStudentLog: (studentId) =>
     all(
-      `SELECT l.class_date, l.present, l.course_id, c.code AS course_code, c.name AS course_name
+      `SELECT l.class_date, l.present, l.course_id, l.timetable_id, c.code AS course_code, c.name AS course_name
        FROM attendance_log l JOIN courses c ON c.id = l.course_id
        WHERE l.student_id = ? ORDER BY l.class_date DESC, c.code`,
       [studentId]

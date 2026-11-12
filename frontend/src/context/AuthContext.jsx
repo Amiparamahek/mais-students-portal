@@ -40,7 +40,14 @@ export function AuthProvider({ children }) {
     window.location.href = '/login';
   };
 
-  const value = { user, loading, login, logout };
+  // Which features the administrator has switched on. Defaults to all on until loaded.
+  const [features, setFeatures] = useState({ chat: true, checkin: true, security: true, analysis: true });
+  useEffect(() => {
+    if (!user) return;
+    api.get('/settings').then((r) => setFeatures(r.data.features)).catch(() => {});
+  }, [user]);
+
+  const value = { user, loading, login, logout, features };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

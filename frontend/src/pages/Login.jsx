@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { useEffect } from 'react';
 import { Book } from '@duo-icons/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,10 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [signupOn, setSignupOn] = useState(false);
+  useEffect(() => {
+    api.get('/settings/public').then((r) => setSignupOn(!!r.data.signup)).catch(() => {});
+  }, []);
   // Why we were sent here (e.g. signed in on another device), shown once.
   const [notice, setNotice] = useState(() => {
     try {
@@ -82,6 +87,10 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
+          <p className="mt-4 text-center text-sm"><Link className="underline" to="/forgot">Forgot password?</Link></p>
+          {signupOn && (
+            <p className="mt-4 text-center text-sm">New student? <Link className="underline" to="/register">Create an account</Link></p>
+          )}
           {import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === 'true' && (
             <div className="mt-6 space-y-1 border-t pt-6 text-center text-sm text-muted-foreground">
               <p>Demo accounts (local development only)</p>

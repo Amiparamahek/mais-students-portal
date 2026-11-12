@@ -9,6 +9,7 @@ import Bar from '../components/Bar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { downloadCsv } from '../lib/download';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const STATE = {
@@ -50,10 +51,20 @@ export default function AdminAnalysis() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Analysis</h2>
-        <p className="text-muted-foreground">What is happening right now and who needs attention. Updates every few seconds.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Analysis</h2>
+          <p className="text-muted-foreground">What is happening right now and who needs attention. Updates every few seconds.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[['students', 'Students'], ['grades', 'Grades'], ['attendance', 'Attendance'], ['attendance_log', 'Attendance by date']].map(([kind, label]) => (
+            <Button key={kind} variant="outline" size="sm" onClick={() => downloadCsv(kind).catch(() => setError('Export failed'))}>
+              Export {label} (CSV)
+            </Button>
+          ))}
+        </div>
       </div>
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Students" value={`${t.active_students} / ${t.students} active`} icon={User} />
@@ -145,6 +156,36 @@ export default function AdminAnalysis() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="py-0">
+        <CardHeader className="pt-6">
+          <CardTitle>By programme</CardTitle>
+          <CardDescription>Attendance and students below {d.threshold}% for each programme.</CardDescription>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Programme</TableHead>
+              <TableHead>Students</TableHead>
+              <TableHead>Lectures</TableHead>
+              <TableHead>Attendance</TableHead>
+              <TableHead className="pr-6">Below {d.threshold}%</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {d.perProgramme.length === 0 && <TableRow><TableCell colSpan={5} className="py-6 text-center text-muted-foreground">No students yet.</TableCell></TableRow>}
+            {d.perProgramme.map((p) => (
+              <TableRow key={p.programme}>
+                <TableCell className="pl-6 font-medium">{p.programme}</TableCell>
+                <TableCell>{p.students}</TableCell>
+                <TableCell>{p.held}</TableCell>
+                <TableCell>{p.percentage == null ? 'No lectures yet' : `${p.percentage}%`}</TableCell>
+                <TableCell className="pr-6">{p.at_risk}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="py-0">

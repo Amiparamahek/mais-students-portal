@@ -1,4 +1,8 @@
 const Course = require('../models/Course');
+const db = require('../config/database');
+
+const all = (sql, params = []) =>
+  new Promise((resolve, reject) => db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows))));
 const Enrollment = require('../models/Enrollment');
 const Attendance = require('../models/Attendance');
 const { toISODate } = require('../utils/dates');
@@ -13,6 +17,20 @@ const fail = (res, err) => {
 const getClasses = async (req, res) => {
   try {
     res.json(await Course.getAll());
+  } catch (err) {
+    fail(res, err);
+  }
+};
+
+// The lectures (timetable slots) of one class, for the admin marking page.
+const getClassLectures = async (req, res) => {
+  try {
+    res.json(await all(
+      `SELECT t.id, t.day, t.time, t.room, t.building FROM timetable t WHERE t.course_id = ?
+       ORDER BY CASE t.day WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3
+         WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 ELSE 7 END, t.time`,
+      [Number(req.params.id)]
+    ));
   } catch (err) {
     fail(res, err);
   }
@@ -34,7 +52,7 @@ const getClassAttendance = async (req, res) => {
     const date = req.query.date || toISODate();
     res.json({
       date,
-      marks: await Attendance.getLogForDate(courseId, date),
+      marks: await Attendance.getLogForDate(courseId, date, Number(req.query.lecture) || null),
       totals: await Attendance.getTotalsForCourse(courseId),
     });
   } catch (err) {
@@ -42,4 +60,4 @@ const getClassAttendance = async (req, res) => {
   }
 };
 
-module.exports = { getClasses, getClassStudents, getClassAttendance };
+module.exports = { getClasses, getClassStudents, getClassAttendance, getClassLectures };

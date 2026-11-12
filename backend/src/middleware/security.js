@@ -40,7 +40,7 @@ function applySecurity(app, config) {
   );
 }
 
-const EXEMPT_FROM_API_LIMIT = new Set(['/api/auth/login', '/api/auth/register', '/api/health']);
+const EXEMPT_FROM_API_LIMIT = new Set(['/api/auth/login', '/api/auth/register', '/api/auth/forgot', '/api/health']);
 
 // Order matters: the specific limiters are registered before the general one.
 const limits = {
@@ -54,6 +54,7 @@ const limits = {
     message: 'Too many failed sign-in attempts from this network. Try again later.',
   }),
   register: limiter({ windowMs: 60 * 60 * 1000, limit: 20, message: 'Too many sign-up attempts. Try again later.' }),
+  forgot: limiter({ windowMs: 60 * 60 * 1000, limit: 10, message: 'Too many reset requests. Try again later.' }),
   checkIn: limiter({ windowMs: 60 * 1000, limit: 30, keyGenerator: userOrIp, message: 'Too many check-in attempts. Wait a minute.' }),
   api: limiter({
     windowMs: 60 * 1000,

@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const { validateEmail, validateName, validatePassword } = require('../utils/validate');
 const Session = require('../models/Session');
 const Detect = require('../utils/detect');
+const { getFeatures } = require('../utils/features');
 
 const deviceOf = (req) => (req.headers['x-device-id'] || '').toString().slice(0, 64) || null;
 
@@ -57,6 +58,9 @@ const register = async (req, res) => {
     if (problem) {
       return res.status(400).json({ message: problem });
     }
+    if (!(await getFeatures()).signup) {
+      return res.status(403).json({ message: 'Self sign-up is switched off. Contact the administration.' });
+    }
 
     const existingUser = await User.findByEmail(email.trim());
     if (existingUser) {
@@ -64,8 +68,11 @@ const register = async (req, res) => {
     }
 
     // Self-registration always creates a student. Admins and lecturers are created by an admin.
+    // Not an account yet: the admin checks the registration, then assigns the student ID.
     const passwordHash = await hashPassword(password);
-    const result = await User.create({ name: name.trim(), email: email.trim(), passwordHash, role: 'student', studentId, faculty, programme, academicYear });
+    const result = await User.create({ name: name.trim(), email: email.trim(), passwordHash, role: 'student', faculty, programme, academicYear });
+    await new Promise((resolve, reject) => db.run("UPDATE users SET is_active = 0, approval_status = 'pending' WHERE id = ?", [result.id], (e) => (e ? reject(e) : resolve())));
+    return res.status(202).json({ message: 'Thank you. Your registration is waiting for approval; the administration will send you your student ID.' });
 
     const user = await User.findById(result.id);
     const token = await startSession(req, user);
@@ -105,7 +112,7 @@ const login = async (req, res) => {
     }
 
     const user = await User.findByEmail(String(email).trim());
-    if (!user) {
+    if (!user || user.deleted_at) {
       await comparePassword(String(password), DUMMY_HASH);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -122,6 +129,10 @@ const login = async (req, res) => {
       await recordLogin(req, user.id, false);
       await detectSafely(() => Detect.afterFailedLogin({ userId: user.id, ip: req.ip, deviceId: deviceOf(req) }));
       return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (user.approval_status === 'pending') {
+      return res.status(403).json({ message: 'Your registration is waiting for approval by the administration.' });
     }
 
     if (user.is_active === 0) {

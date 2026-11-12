@@ -3,6 +3,7 @@ import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const STATUS = {
@@ -16,11 +17,23 @@ const STATUS = {
 // Today's lectures. A lecture opens 15 minutes before it starts. Check-in is the student's
 // own action; anything not checked in by the end of the lecture is recorded as absent.
 export default function TodayLectures() {
+  const { features = {} } = useAuth();
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(null);
   const [message, setMessage] = useState(null);
 
-  useLiveFetch(() => api.get('/attendance/today').then((r) => setData(r.data)), []);
+  useLiveFetch(() => (features.checkin === false ? null : api.get('/attendance/today').then((r) => setData(r.data))), [features.checkin]);
+
+  if (features.checkin === false) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Today's lectures</CardTitle>
+          <CardDescription>Self check-in is switched off by the administrator. Your attendance is recorded by the admin.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   const checkIn = async (lecture) => {
     setBusy(lecture.timetable_id);

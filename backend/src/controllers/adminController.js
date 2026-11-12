@@ -1,3 +1,4 @@
+const db = require('../config/database');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Announcement = require('../models/Announcement');
@@ -6,6 +7,7 @@ const Enrollment = require('../models/Enrollment');
 const Attendance = require('../models/Attendance');
 const { hashPassword } = require('../utils/auth');
 const Session = require('../models/Session');
+const { nextStudentId } = require('../utils/studentIds');
 const { validateEmail, validateName, validatePassword, generateTempPassword } = require('../utils/validate');
 
 const getAccounts = async (req, res) => {
@@ -99,14 +101,6 @@ const resetStudentPassword = async (req, res) => {
   }
 };
 
-// Next free ID for the year: MAIS-2026-0146 after MAIS-2026-0145. Starts again at 0001 each year.
-const nextStudentId = async (year = new Date().getFullYear()) => {
-  const prefix = `MAIS-${year}-`;
-  const used = await User.findStudentIdsLike(`${prefix}%`);
-  const highest = used.reduce((max, id) => Math.max(max, parseInt(id.slice(prefix.length), 10) || 0), 0);
-  return `${prefix}${String(highest + 1).padStart(4, '0')}`;
-};
-
 const createStudent = async (req, res) => {
   try {
     const { name, email, password, role, faculty, programme, academic_year } = req.body;
@@ -177,14 +171,44 @@ const updateStudent = async (req, res) => {
   }
 };
 
+// Students who were deleted (soft), so an admin can restore one.
+const getDeletedStudents = async (req, res) => {
+  try {
+    const rows = await new Promise((resolve, reject) =>
+      db.all(
+        `SELECT id, name, email, student_id, programme, deleted_at FROM users
+         WHERE role = 'student' AND deleted_at IS NOT NULL ORDER BY deleted_at DESC`,
+        (err, r) => (err ? reject(err) : resolve(r))
+      )
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const restoreStudent = async (req, res) => {
+  try {
+    const result = await User.restore(req.params.id);
+    if (result.changes === 0) return res.status(404).json({ message: 'Deleted student not found' });
+    res.json({ message: 'Student restored' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await User.delete(id);
+    // Soft delete: the account is hidden and cannot sign in, but its records and ID stay.
+    const result = await User.softDelete(id);
     if (result.changes === 0) {
       return res.status(404).json({ message: 'Student not found' });
     }
-    res.json({ message: 'Student deleted' });
+    await Session.revokeAll(id, 'deactivated');
+    res.json({ message: 'Student deleted (their records and student ID are kept)' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -295,6 +319,8 @@ module.exports = {
   createStudent,
   updateStudent,
   deleteStudent,
+  restoreStudent,
+  getDeletedStudents,
   toggleStudentActive,
   getStudentSessions,
   endStudentSessions,

@@ -30,6 +30,10 @@ const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/users');
 const teachingRoutes = require('./routes/teaching');
 const securityRoutes = require('./routes/security');
+const reportRoutes = require('./routes/reports');
+const settingsRoutes = require('./routes/settings');
+const requestRoutes = require('./routes/requests');
+const eventRoutes = require('./routes/events');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -40,13 +44,23 @@ app.use(express.json({ limit: '100kb' }));
 // Rate limits. Specific routes first, then everything under /api.
 app.use('/api/auth/login', limits.login);
 app.use('/api/auth/register', limits.register);
+app.use('/api/auth/forgot', limits.forgot);
 app.use('/api/attendance/check-in', limits.checkIn);
 app.use('/api', limits.api);
 app.use(auditAdminWrites);
 
 // Health check
+// Health check: also confirms the database answers, so a monitor sees a broken DB, not just a running process.
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'MAIS Student Portal API running' });
+  db.get('SELECT 1 AS ok', (err) => {
+    const dbOk = !err;
+    res.status(dbOk ? 200 : 503).json({
+      status: dbOk ? 'ok' : 'degraded',
+      message: 'MAIS Student Portal API running',
+      database: dbOk ? 'ok' : 'unreachable',
+      uptime_seconds: Math.round(process.uptime()),
+    });
+  });
 });
 
 // API Routes
@@ -62,6 +76,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teaching', teachingRoutes);
 app.use('/api/admin/security', securityRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/events', eventRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -72,6 +90,22 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error' });
 });
+
+// One-process deployment: when SERVE_FRONTEND=true, serve the built React app from the same
+// origin. Everything under /api is handled above; any other address returns the app shell so
+// the React router can open the page.
+if (process.env.SERVE_FRONTEND === 'true') {
+  const dist = path.join(__dirname, '../../frontend/dist');
+  const fs = require('fs');
+  if (fs.existsSync(path.join(dist, 'index.html'))) {
+    app.use(express.static(dist, { index: false, maxAge: '1h', setHeaders: (res, file) => {
+      if (file.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    } }));
+    app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(dist, 'index.html'), { headers: { 'Cache-Control': 'no-cache' } }));
+  } else {
+    console.warn('SERVE_FRONTEND is on but frontend/dist is missing. Run: cd frontend && npm run build');
+  }
+}
 
 // 404 handler
 app.use((req, res) => {

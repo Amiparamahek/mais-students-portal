@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 export default function AdminAttendance() {
   const [classes, setClasses] = useState([]);
   const [courseId, setCourseId] = useState('');
+  const [lectures, setLectures] = useState([]);
+  const [lecture, setLecture] = useState('');
   const [date, setDate] = useState(toISODate());
   const [students, setStudents] = useState([]);
   const [present, setPresent] = useState({});
@@ -25,28 +27,38 @@ export default function AdminAttendance() {
     });
   }, []);
 
-  // Roster plus any attendance already saved for this class and date.
+  // The lectures of this class; a second lecture on the same day is recorded separately.
+  useEffect(() => {
+    if (!courseId) return;
+    api.get(`/teaching/classes/${courseId}/lectures`).then((r) => {
+      setLectures(r.data || []);
+      setLecture(r.data?.[0] ? String(r.data[0].id) : '');
+    });
+  }, [courseId]);
+
+  // Roster plus any attendance already saved for this class, date and lecture.
   useEffect(() => {
     if (!courseId) return;
     Promise.all([
       api.get(`/teaching/classes/${courseId}/students`),
-      api.get(`/teaching/classes/${courseId}/attendance`, { params: { date } }),
+      api.get(`/teaching/classes/${courseId}/attendance`, { params: { date, lecture: lecture || undefined } }),
     ]).then(([s, a]) => {
       setStudents(s.data || []);
       const saved = Object.fromEntries((a.data.marks || []).map((m) => [m.student_id, !!m.present]));
       setPresent(Object.fromEntries((s.data || []).map((st) => [st.id, saved[st.id] ?? true])));
       setTotals(a.data.totals || []);
     });
-  }, [courseId, date]);
+  }, [courseId, date, lecture]);
 
   const save = async () => {
     setSaving(true);
     setMessage(null);
     try {
-      const records = students.map((s) => ({ student_id: s.id, course_id: Number(courseId), present: !!present[s.id] }));
+      const timetable_id = lecture ? Number(lecture) : null;
+      const records = students.map((s) => ({ student_id: s.id, course_id: Number(courseId), timetable_id, present: !!present[s.id] }));
       await api.post('/attendance', { date, records });
       setMessage({ ok: true, text: `Attendance saved for ${date}.` });
-      const a = await api.get(`/teaching/classes/${courseId}/attendance`, { params: { date } });
+      const a = await api.get(`/teaching/classes/${courseId}/attendance`, { params: { date, lecture: lecture || undefined } });
       setTotals(a.data.totals || []);
     } catch (err) {
       setMessage({ ok: false, text: err.response?.data?.message || 'Could not save attendance' });
@@ -63,7 +75,7 @@ export default function AdminAttendance() {
       </div>
 
       <Card>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-4">
           <div className="space-y-2">
             <Label>Class</Label>
             <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
@@ -73,6 +85,13 @@ export default function AdminAttendance() {
           <div className="space-y-2">
             <Label>Date</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Lecture</Label>
+            <select value={lecture} onChange={(e) => setLecture(e.target.value)} disabled={lectures.length === 0}>
+              {lectures.length === 0 && <option value="">No timetable slot (class-level)</option>}
+              {lectures.map((l) => <option key={l.id} value={l.id}>{l.day} {l.time}{l.room ? ` · ${l.room}` : ''}</option>)}
+            </select>
           </div>
           <div className="flex items-end">
             <Button onClick={save} disabled={saving || students.length === 0} className="w-full">

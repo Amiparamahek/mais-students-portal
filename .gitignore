@@ -39,3 +39,6 @@ coverage/
 
 # Local-only front-end overrides
 .env*.local
+
+# Database backups (made by npm run backup)
+backend/backups/

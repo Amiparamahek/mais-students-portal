@@ -64,3 +64,14 @@ DB_PATH=./database.sqlite
 
 - This is a demo/prototype system. Do not use real student data or real passwords.
 - See `SETUP.md` for detailed setup and troubleshooting instructions.
+## Tests
+
+The feature tests call a running server. Run them on a copy of the database, because they create test students and attendance:
+
+```bash
+cp backend/database.sqlite /tmp/mais-test.sqlite
+cd backend && PORT=5058 DB_PATH=/tmp/mais-test.sqlite node src/server.js   # terminal 1
+TEST_BASE=http://localhost:5058/api npm test                              # terminal 2
+```
+
+Admin login for the tests comes from `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` (defaults: the demo admin).

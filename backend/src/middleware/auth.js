@@ -13,7 +13,7 @@ const SIGNED_OUT = {
 
 const userRow = (id) =>
   new Promise((resolve, reject) =>
-    db.get('SELECT id, email, role, is_active FROM users WHERE id = ?', [id], (err, row) => (err ? reject(err) : resolve(row)))
+    db.get('SELECT id, email, role, is_active, deleted_at FROM users WHERE id = ?', [id], (err, row) => (err ? reject(err) : resolve(row)))
   );
 
 // Checks the token, then that its session is still active and the account is still enabled.
@@ -46,7 +46,7 @@ const auth = async (req, res, next) => {
     }
 
     const user = await userRow(decoded.id);
-    if (!user || user.is_active === 0) {
+    if (!user || user.is_active === 0 || user.deleted_at) {
       return res.status(401).json({ message: SIGNED_OUT.deactivated, reason: 'deactivated' });
     }
 

@@ -66,13 +66,6 @@ async function finalizeAt(now) {
     for (const slot of slots) {
       if (dayStr < slot.created_on) continue; // slot was added after that day
       if (windowState(slot.time, date, now) !== 'closed') continue;
-      // Attendance is recorded per class per date. Wait while another slot of the same class
-      // on this day is still open, so the open lecture can still be checked in to.
-      const others = await all(
-        'SELECT time FROM timetable WHERE course_id = ? AND day = ? AND id <> ?',
-        [slot.course_id, slot.day || weekdayOf(date), slot.id]
-      );
-      if (others.some((o) => windowState(o.time, date, now) !== 'closed')) continue;
       const done = await get('SELECT 1 FROM class_sessions WHERE timetable_id = ? AND class_date = ?', [slot.id, dayStr]);
       if (done) continue;
 
@@ -83,11 +76,11 @@ async function finalizeAt(now) {
       );
       for (const { student_id } of students) {
         const has = await get(
-          'SELECT 1 FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ?',
-          [student_id, slot.course_id, dayStr]
+          'SELECT 1 FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ? AND IFNULL(timetable_id, 0) = ?',
+          [student_id, slot.course_id, dayStr, slot.id]
         );
         if (!has) {
-          await Attendance.recordClass({ studentId: student_id, courseId: slot.course_id, classDate: dayStr, present: false, recordedBy: null });
+          await Attendance.recordClass({ studentId: student_id, courseId: slot.course_id, classDate: dayStr, present: false, recordedBy: null, timetableId: slot.id });
         }
       }
       await run('INSERT OR IGNORE INTO class_sessions (timetable_id, class_date) VALUES (?, ?)', [slot.id, dayStr]);
@@ -114,8 +107,8 @@ async function todayForStudent(studentId, clock) {
   const lectures = [];
   for (const s of slots) {
     const mark = await get(
-      'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ?',
-      [studentId, s.course_id, dayStr]
+      'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ? AND IFNULL(timetable_id, 0) = ?',
+      [studentId, s.course_id, dayStr, s.id]
     );
     const state = windowState(s.time, now, now);
     const [start] = slotMinutes(s.time);
@@ -171,8 +164,8 @@ async function checkIn(studentId, timetableId, now = new Date(), evidence = {}) 
   if (state === 'closed') throw new CheckInError(400, 'This class has ended');
 
   const mark = await get(
-    'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ?',
-    [studentId, slot.course_id, dayStr]
+    'SELECT present FROM attendance_log WHERE student_id = ? AND course_id = ? AND class_date = ? AND IFNULL(timetable_id, 0) = ?',
+    [studentId, slot.course_id, dayStr, slot.id]
   );
   if (mark) return { status: mark.present ? 'present' : 'absent', already: true, course_code: slot.code };
 
@@ -189,9 +182,10 @@ async function checkIn(studentId, timetableId, now = new Date(), evidence = {}) 
     classDate: dayStr,
     present: true,
     recordedBy: studentId,
+    timetableId: slot.id,
     evidence: { deviceId: evidence.deviceId, ip: evidence.ip },
   });
-  await Detect.afterCheckIn({ studentId, courseId: slot.course_id, timetableId, classDate: dayStr, deviceId: evidence.deviceId, ip: evidence.ip });
+  await Detect.afterCheckIn({ studentId, courseId: slot.course_id, timetableId: slot.id, classDate: dayStr, deviceId: evidence.deviceId, ip: evidence.ip });
   return { status: 'present', already: false, course_code: slot.code };
 }
 

@@ -4,6 +4,7 @@ import { LogOut, PanelLeft } from 'lucide-react';
 import { Bell, BellBadge, Moon2, Sun } from '@duo-icons/react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { connectLive } from '../lib/live';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -29,7 +30,7 @@ function useTheme() {
 
 // Shared shell for the admin and student portals (ObsidianUI look).
 export default function PortalLayout({ brand, menu, children, notificationsPath }) {
-  const { user, logout } = useAuth();
+  const { user, logout, features = {} } = useAuth();
   const location = useLocation();
   const [dark, setDark] = useTheme();
   const [open, setOpen] = useState(false);
@@ -37,6 +38,21 @@ export default function PortalLayout({ brand, menu, children, notificationsPath 
 
   // Close the mobile drawer when navigating.
   useEffect(() => setOpen(false), [location.pathname]);
+
+  // One live connection while signed in. A notification updates the bell at once.
+  useEffect(() => {
+    if (!user) return undefined;
+    return connectLive();
+  }, [user?.id]);
+  useEffect(() => {
+    const onEvent = (e) => {
+      if (e.detail?.type === 'notification' && notificationsPath) {
+        api.get('/notifications/unread-count').then((res) => setUnread(res.data?.count ?? res.data?.unread ?? 0)).catch(() => {});
+      }
+    };
+    window.addEventListener('mais:event', onEvent);
+    return () => window.removeEventListener('mais:event', onEvent);
+  }, [notificationsPath]);
 
   // Students see an unread badge; refresh on navigation so new admin posts show up.
   useEffect(() => {
@@ -69,7 +85,7 @@ export default function PortalLayout({ brand, menu, children, notificationsPath 
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {menu.map(({ name, icon: Icon, path }) => (
+          {menu.filter((m) => !m.feature || features[m.feature] !== false).map(({ name, icon: Icon, path }) => (
             <NavLink
               key={path}
               to={path}
