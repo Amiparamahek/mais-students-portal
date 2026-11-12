@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,30 +13,30 @@ import AdminLayout from './components/AdminLayout';
 import StudentLayout from './components/StudentLayout';
 
 // Admin pages
-import AdminDashboard from './pages/AdminDashboard';
-import AdminStudents from './pages/AdminStudents';
-import AdminCourses from './pages/AdminCourses';
-import AdminAttendance from './pages/AdminAttendance';
-import AdminTimetable from './pages/AdminTimetable';
-import AdminAnnouncements from './pages/AdminAnnouncements';
-import AdminGrades from './pages/AdminGrades';
-import AdminExams from './pages/AdminExams';
-import StudentFindCourses from './pages/StudentFindCourses';
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminStudents = lazy(() => import('./pages/AdminStudents'));
+const AdminCourses = lazy(() => import('./pages/AdminCourses'));
+const AdminAttendance = lazy(() => import('./pages/AdminAttendance'));
+const AdminTimetable = lazy(() => import('./pages/AdminTimetable'));
+const AdminAnnouncements = lazy(() => import('./pages/AdminAnnouncements'));
+const AdminGrades = lazy(() => import('./pages/AdminGrades'));
+const AdminExams = lazy(() => import('./pages/AdminExams'));
+const StudentFindCourses = lazy(() => import('./pages/StudentFindCourses'));
 
 // Student pages
-import StudentDashboard from './pages/StudentDashboard';
-import StudentCourses from './pages/StudentCourses';
-import StudentAttendance from './pages/StudentAttendance';
-import StudentGrades from './pages/StudentGrades';
-import StudentTimetable from './pages/StudentTimetable';
-import StudentAnnouncements from './pages/StudentAnnouncements';
-import StudentProfile from './pages/StudentProfile';
-import StudentExams from './pages/StudentExams';
-import StudentNotifications from './pages/StudentNotifications';
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const StudentCourses = lazy(() => import('./pages/StudentCourses'));
+const StudentAttendance = lazy(() => import('./pages/StudentAttendance'));
+const StudentGrades = lazy(() => import('./pages/StudentGrades'));
+const StudentTimetable = lazy(() => import('./pages/StudentTimetable'));
+const StudentAnnouncements = lazy(() => import('./pages/StudentAnnouncements'));
+const StudentProfile = lazy(() => import('./pages/StudentProfile'));
+const StudentExams = lazy(() => import('./pages/StudentExams'));
+const StudentNotifications = lazy(() => import('./pages/StudentNotifications'));
 
 // Auth pages
 import Login from './pages/Login';
-import Unauthorized from './pages/Unauthorized';
+const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
 function App() {
   const { user, loading } = useAuth();
@@ -51,6 +51,7 @@ function App() {
 
   return (
     <Router>
+      <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="size-8 animate-spin rounded-full border-b-2 border-foreground" /></div>}>
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
@@ -109,6 +110,7 @@ function App() {
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 }
