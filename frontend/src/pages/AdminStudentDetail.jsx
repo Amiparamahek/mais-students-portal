@@ -5,6 +5,7 @@ import { AlertTriangle, Approved, Book, Clock } from '@duo-icons/react';
 import useLiveFetch from '../hooks/useLiveFetch';
 import api from '../services/api';
 import { formatDateTime, timeAgo } from '../lib/date';
+import { EVENT_LABELS, SEVERITY_VARIANT, shortDevice } from '../lib/security';
 import StatCard from '../components/StatCard';
 import Bar from '../components/Bar';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +50,7 @@ export default function AdminStudentDetail() {
   }
   if (!data) return <div className="flex h-64 items-center justify-center"><div className="size-8 animate-spin rounded-full border-b-2 border-foreground" /></div>;
 
-  const { student: s, summary: m, enrollments, attendance, attendanceLog, grades, recentLogins, upcomingExams } = data;
+  const { student: s, summary: m, enrollments, attendance, attendanceLog, grades, recentLogins, upcomingExams, devices = [], checkIns = [], security = { open: 0, events: [] } } = data;
 
   return (
     <div className="space-y-6">
@@ -122,6 +123,96 @@ export default function AdminStudentDetail() {
           </TableBody>
         </Table>
       </Card>
+
+      <Card className="py-0">
+        <CardHeader className="pt-6">
+          <CardTitle>Security</CardTitle>
+          <CardDescription>
+            {security.open === 0 ? 'No open flags.' : `${security.open} open ${security.open === 1 ? 'flag' : 'flags'} involving this student.`}
+          </CardDescription>
+        </CardHeader>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="pl-6">Flag</TableHead>
+              <TableHead>With</TableHead>
+              <TableHead>Severity</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="pr-6">When</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {security.events.length === 0 && <Empty cols={5}>Nothing flagged for this student.</Empty>}
+            {security.events.map((f) => (
+              <TableRow key={f.id}>
+                <TableCell className="pl-6">{EVENT_LABELS[f.type] || f.type}</TableCell>
+                <TableCell>{f.other_user_id ? <Link className="underline" to={`/admin/students/${f.other_user_id}`}>Student #{f.other_user_id}</Link> : '-'}</TableCell>
+                <TableCell><Badge variant={SEVERITY_VARIANT[f.severity]}>{f.severity}</Badge></TableCell>
+                <TableCell><Badge variant="outline">{f.status}</Badge></TableCell>
+                <TableCell className="pr-6 text-muted-foreground">{formatDateTime(f.created_at)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <Card className="py-0">
+          <CardHeader className="pt-6">
+            <CardTitle>Browsers used</CardTitle>
+            <CardDescription>Each browser this account signed in from. A browser used by several accounts is flagged on the Security page.</CardDescription>
+          </CardHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="pl-6">Browser</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Accounts on it</TableHead>
+                <TableHead className="pr-6">Last seen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {devices.length === 0 && <Empty cols={4}>No browser recorded yet.</Empty>}
+              {devices.map((d) => (
+                <TableRow key={d.device_id}>
+                  <TableCell className="pl-6 font-mono text-xs">{shortDevice(d.device_id)}</TableCell>
+                  <TableCell className="text-sm">{d.ip || '-'}</TableCell>
+                  <TableCell><Badge variant={d.accounts_on_device > 2 ? 'destructive' : 'secondary'}>{d.accounts_on_device}</Badge></TableCell>
+                  <TableCell className="pr-6" title={formatDateTime(d.last_seen)}>{timeAgo(d.last_seen)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+
+        <Card className="py-0">
+          <CardHeader className="pt-6">
+            <CardTitle>Check-in evidence</CardTitle>
+            <CardDescription>Where and from which browser each self check-in was made.</CardDescription>
+          </CardHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="pl-6">Class</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead className="pr-6">Browser</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {checkIns.length === 0 && <Empty cols={4}>No check-ins with evidence yet.</Empty>}
+              {checkIns.map((c, i) => (
+                <TableRow key={i}>
+                  <TableCell className="pl-6">{c.course_code}</TableCell>
+                  <TableCell>{c.class_date}</TableCell>
+                  <TableCell className="text-sm">{c.check_in_ip || '-'}</TableCell>
+                  <TableCell className="pr-6 font-mono text-xs">{shortDevice(c.device_id)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="py-0">

@@ -8,6 +8,7 @@ import StatCard from '../components/StatCard';
 import Bar from '../components/Bar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const STATE = {
@@ -88,6 +89,22 @@ export default function AdminAnalysis() {
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Security</CardTitle>
+          <CardDescription>
+            {d.security?.open_total
+              ? `${d.security.open_total} open ${d.security.open_total === 1 ? 'flag' : 'flags'} to review.`
+              : 'No open flags.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-6">
+          <div><p className="text-xs uppercase text-muted-foreground">High severity</p><p className="text-2xl font-bold">{d.security?.open_high ?? 0}</p></div>
+          <div><p className="text-xs uppercase text-muted-foreground">Medium</p><p className="text-2xl font-bold">{d.security?.open_medium ?? 0}</p></div>
+          <Button asChild variant="outline"><Link to="/admin/security">Open Security page</Link></Button>
         </CardContent>
       </Card>
 
